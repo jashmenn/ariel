@@ -37,10 +37,8 @@ module Ariel
     def skip_to(*landmark_group)
       original_pos=self.cur_pos
       if self.any? {|token| token.matches?(landmark_group.first)}  #Search for first landmark
-        p "Sucess"
         self.cur_pos-=1
         if landmark_group.all? {|landmark| self.advance.matches?(landmark)}
-          p "Condition true"
           return self.cur_pos
         end
       end
@@ -64,12 +62,14 @@ module Ariel
     attr_accessor :label_index
     def tokenize(input, consume_until=nil, stream_offset=nil, regex=DEFAULT_RE)
       if consume_until
-        super(input[0...consume_until], stream_offset, regex) #Split the stream at the label to ensure it is tokenised seperately
+        token_count=0
+        token_count+= super(input[0...consume_until], stream_offset, regex) #Split the stream at the label to ensure it is tokenised seperately
         self.label_index=(self.size) #Next token will be the desired label
-        super(input[consume_until..-1], stream_offset, regex)
+        token_count+= super(input[consume_until..-1], stream_offset, regex)
       else
-        super(input, stream_offset, regex)
+        token_count+= super(input, stream_offset, regex)
       end
+      token_count
     end
 
     def reverse
