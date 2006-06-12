@@ -6,16 +6,8 @@ class TestToken < Test::Unit::TestCase
     @t=Ariel::Token.new('Test', 0, 4)
   end
   
-  def test_text  #These tests are stupid, however start_loc and end_loc should maybe have some validation?
-    assert_equal 'Test', @t.text
-  end
-  
-  def test_start_loc
-    assert_equal 0, @t.start_loc
-  end
-  
-  def test_end_loc
-    assert_equal 4, @t.end_loc
+  def test_validation
+    assert_raise(ArgumentError) {Ariel::Token.new('Test', 1, 3)}
   end
 
   def test_matches?

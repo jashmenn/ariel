@@ -53,6 +53,11 @@ class TestTokenStream < Test::Unit::TestCase
     @stream.tokenize("test", 50)
     assert_equal 50, @stream.last.start_loc  #Test a given offset is respected
   end
+
+  def test_apply_rule
+    assert_equal 3, @stream.apply_rule([["This", "is"], [:alpha]])
+    assert_nil @stream.apply_rule([["Disco", "Duck"]])
+  end
 end
 
 class TestLabeledStream < Test::Unit::TestCase
