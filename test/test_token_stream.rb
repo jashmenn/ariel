@@ -21,8 +21,8 @@ class TestTokenStream < Test::Unit::TestCase
   def test_each
     i=0
     @stream.each {i=i+1}
-    assert_equal 8, i
-    assert_equal 9, @stream.cur_pos
+    assert_equal 7, i
+    assert_equal 8, @stream.cur_pos
   end
 
   def test_rewind
@@ -37,14 +37,14 @@ class TestTokenStream < Test::Unit::TestCase
     assert_nil @stream.skip_to("Ruby")
     assert_equal 1, @stream.cur_pos  #Stream's position remains unchanged by a failed match
     assert @stream.skip_to("See", "below")
-    assert_equal 7, @stream.cur_pos
+    assert_equal 6, @stream.cur_pos
     @stream.rewind
-    @stream.skip_to("test", :alpha_numeric)
-    assert_equal 4, @stream.cur_pos
+    @stream.skip_to("is", :alpha_numeric)
+    assert_equal 3, @stream.cur_pos
   end
 
   def test_tokenize
-    assert_equal 8, @stream.length
+    assert_equal 7, @stream.length
     assert_equal 6, @stream.tokenize("Adding further tokens to the stream")
     @stream.clear
     @stream.tokenize("test")
@@ -55,16 +55,7 @@ class TestTokenStream < Test::Unit::TestCase
   end
 
   def test_apply_rule
-    assert_equal 3, @stream.apply_rule([["This", "is"], [:alpha]])
+    assert_equal 5, @stream.apply_rule([["This", "is"], [:alpha]])
     assert_nil @stream.apply_rule([["Disco", "Duck"]])
   end
-end
-
-class TestLabeledStream < Test::Unit::TestCase
-  def test_tokenize
-    @stream=Ariel::LabeledStream.new
-    @stream.tokenize("Extract Athis text", 9)
-    assert_equal 2, @stream.label_index
-  end
-
 end

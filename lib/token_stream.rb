@@ -11,7 +11,7 @@ module Ariel
     # instance) be dealing with a document where whitespace is semantically
     # significant, so it may be useful to consider tabs or multiple spaces as
     # tokens.
-    DEFAULT_RE=/[[:alpha:]]+|\d+|[^\w\s]+/ #Improved from: /\w+|[^\w\s]+/ to split Item94 in to Item, 94. Probably undesirable to split hyphenated words.
+    DEFAULT_RE=/<\/?\w+>|\w+|[^\w\s]+/ #Don't use POSIX Regexp classes, they may not like UTF chars.
     
 
     def initialize()

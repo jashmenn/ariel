@@ -37,7 +37,7 @@ class TestLearner < Test::Unit::TestCase
   end
 
   def test_refine
-    @learner.current_rule=[[">"]]
+    @learner.current_rule=[["<b>"]]
     assert @learner.refine
   end
 end

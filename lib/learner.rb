@@ -32,7 +32,7 @@ module Ariel
     end
 
     # The seed example is chosen from the array of remaining examples. The
-    # LabeledStream with the fewest tokens before the labeled token is chosed.
+    # LabeledStream with the fewest tokens before the labeled token is chosen.
     def set_seed
       sorted = @examples.sort_by {|example| example.label_index}
       self.current_seed=sorted.first
@@ -64,51 +64,51 @@ module Ariel
     # arguments. Only landmark refinements implemented for now. When adding new
     # landmarks, the algorithm 
     def refine
-      candidates = []
+      topology_refs = []
       landmark_refs = []
-      current_rule.each_with_index do |landmark_group, i|
-        candidates.concat add_new_landmarks(landmark_group, i) #Topology refinements
-        #Landmark refinements
-        current_seed.rewind
-        current_seed.apply_rule(current_rule[0..(i-1)]) unless current_rule.size == 1 #Don't care about already matched tokens
-        p landmark_group
-        width = landmark_group.size
-        while current_seed.skip_to(*landmark_group) #Probably should stop when cur_pos > label_index
-          match_start = (current_seed.cur_pos - 1) - width
-          match_end = current_seed.cur_pos
-          front_extended_landmark = landmark_group.clone.insert(0, current_seed[match_start-1].text)
-          back_extended_landmark = landmark_group.clone.insert(-1, current_seed[match_start-1].text)
-          #ToDo: Add matching wildcards in a non brain-dead way
-          r1 = current_rule.clone
-          r2 = current_rule.clone
-          r1[i]=front_extended_landmark
-          r2[i]=back_extended_landmark
-          landmark_refs << r1
-          landmark_refs << r2
-        end
-          
+      current_rule.each_with_index do |landmark_group, index|
+        topology_refs.concat add_new_landmarks(landmark_group, index) #Topology refinements
+        landmark_refs.concat lengthen_landmark(landmark_group, index) #Landmark refinements
       end
-      p candidates.uniq
-      p landmark_refs
+      return topology_refs + landmark_refs
     end
 
     # Implements landmark refinements.
-    def lengthen_landmarks()
-      raise NotImplmentedError
+    def lengthen_landmark(landmark_group, index)
+      current_seed.rewind
+      current_seed.apply_rule(current_rule[0..(index-1)]) unless current_rule.size == 1 #Don't care about already matched tokens
+      landmark_refs=[]
+      width = landmark_group.size
+      while current_seed.skip_to(*landmark_group) #Probably should stop when cur_pos > label_index
+        match_start = (current_seed.cur_pos - 1) - width
+        match_end = current_seed.cur_pos
+        preceding_token = current_seed[match_start-1]
+        trailing_token = current_seed[match_start+1]
+        front_extended_landmark = landmark_group.clone.insert(0, preceding_token.text)
+        back_extended_landmark = landmark_group.clone.insert(-1, trailing_token.text)
+        #ToDo: Add matching wildcards in a non brain-dead way
+        r1 = current_rule.clone
+        r2 = current_rule.clone
+        r1[index]=front_extended_landmark
+        r2[index]=back_extended_landmark
+        landmark_refs << r1
+        landmark_refs << r2
+      end
+      return landmark_refs
     end
 
     # Implements topology refinements.
     def add_new_landmarks(landmark, index)
-      rules=[]
+      topology_refs=[]
       start_pos = current_seed.apply_rule(current_rule[0..index])
       end_pos = current_seed.label_index #No point adding tokens that occur after the label_index
       current_seed[start_pos...end_pos].to_a.each do |token| #Convert slice to array for normal iteration
-          rules << current_rule.clone.insert(index+1, [token.text])
+          topology_refs << current_rule.clone.insert(index+1, [token.text])
           token.matching_wildcards.each do |wildcard| #Creates *many* duplicate rules
-            rules << current_rule.clone.insert(index+1, [wildcard])
+            topology_refs << current_rule.clone.insert(index+1, [wildcard])
           end
       end
-    return rules
+    return topology_refs.uniq
     end
 
     # A simple test function that returns true if the rule matches the given
