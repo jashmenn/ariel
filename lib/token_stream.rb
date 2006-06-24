@@ -91,6 +91,7 @@ module Ariel
     # rule matches, and nil if it fails.
     def apply_rule(rule)
       self.rewind #rules are applied from the beginning of the stream
+      return cur_pos if rule.nil?
       rule.each do |landmark|
         return nil unless skip_to(*landmark)
       end

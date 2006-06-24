@@ -7,7 +7,7 @@ module Ariel
   # on the remaining examples. Once all examples are covered, the disjunct of
   # all generated rules is returned.
   #
-  # Temporarily, rules consist of an array of arrays, e.g. [[:html_tag], ["This",
+  # At least for now, rules consist of an array of arrays, e.g. [[:html_tag], ["This",
   # "is"]] is equivalent to skip_to(:html_tag) followed by skip_to(["This",
   # "is"]).
   class Learner
@@ -23,6 +23,7 @@ module Ariel
     def learn_rule() 
       combined_rules=[]
       while not examples.empty?
+        set_seed
         @current_rule = find_best_rule() # Find the rule that matches the most examples and fails on the others/
         @examples.delete_if {|example| rule_covers?(example, rule)} #separate and conquer!
         rule << current_rule
@@ -54,7 +55,14 @@ module Ariel
     # Equivalent of LearnDisjunct in STALKER algorithm. Generates initial
     # candidate rules, refines, and then returns a single rule.
     def find_best_rule
-      raise NotImplmentedError
+      candidates = generate_initial_candidates
+      begin
+        best_refiner = get_best_refiner(candidates)
+        best_solution = get_best_solution(candidates)
+        @current_rule = best_refiner
+        candidates = refine
+      end while (is_not_perfect(best_solution) and best_refiner.empty? != true)
+      return post_process best_solution
     end
 
     # Oversees both landmark (e.g. changing skip_to("<b>") in to
@@ -66,43 +74,67 @@ module Ariel
     def refine
       topology_refs = []
       landmark_refs = []
-      current_rule.each_with_index do |landmark_group, index|
-        topology_refs.concat add_new_landmarks(landmark_group, index) #Topology refinements
-        landmark_refs.concat lengthen_landmark(landmark_group, index) #Landmark refinements
+      current_rule.each_with_index do |landmark, index|
+        topology_refs.concat add_new_landmarks(landmark, index) #Topology refinements
+        landmark_refs.concat lengthen_landmark(landmark, index) #Landmark refinements
       end
       return topology_refs + landmark_refs
     end
 
-    # Implements landmark refinements.
-    def lengthen_landmark(landmark_group, index)
-      current_seed.rewind
-      current_seed.apply_rule(current_rule[0..(index-1)]) unless current_rule.size == 1 #Don't care about already matched tokens
+    # Implements landmark refinements. Landmarks are lengthened to make them
+    # more specific. BROKEN
+    # * Takes a landmark and its index in the current rule.
+    # * Applies the rule consisting of all previous landmarks in the current
+    #   rule, so the landmark can be considered in the context of the point from
+    #   which it shall be applied.
+    # * Every point at which the landmark matches after the cur_loc is considered.
+    # * Two extended landmarks are generated - a landmark that includes the
+    #   token before the match, and a landmark that includes that token after the
+    #   match. 
+    # * Rules are generated incorporating these extended landmarks, including
+    #   alternative landmark extensions that use relevant wildcards.
+    def lengthen_landmark(landmark, index)
+      current_seed.rewind #In case apply_rule isn't called as index=0
+      current_seed.apply_rule(current_rule[0..(index-1)]) if index > 0 #Don't care about already matched tokens
       landmark_refs=[]
-      width = landmark_group.size
-      while current_seed.skip_to(*landmark_group) #Probably should stop when cur_pos > label_index
-        match_start = (current_seed.cur_pos - 1) - width
-        match_end = current_seed.cur_pos
+      refined_rules=[]
+      width = landmark.size
+      while current_seed.skip_to(*landmark) #Probably should stop when cur_pos > label_index
+        match_start = (current_seed.cur_pos - 1) - width #pos of first matched token
+        match_end = current_seed.cur_pos - 1 #pos of last matched token
         preceding_token = current_seed[match_start-1]
-        trailing_token = current_seed[match_start+1]
-        front_extended_landmark = landmark_group.clone.insert(0, preceding_token.text)
-        back_extended_landmark = landmark_group.clone.insert(-1, trailing_token.text)
-        #ToDo: Add matching wildcards in a non brain-dead way
-        r1 = current_rule.clone
-        r2 = current_rule.clone
-        r1[index]=front_extended_landmark
-        r2[index]=back_extended_landmark
-        landmark_refs << r1
-        landmark_refs << r2
+        trailing_token = current_seed[match_end+1]
+        (preceding_token.matching_wildcards << preceding_token.text).each do |front_extended_landmark|
+          landmark_refs << landmark.clone.insert(0, front_extended_landmark)
+        end
+        (trailing_token.matching_wildcards << trailing_token.text).each do |back_extended_landmark|
+          landmark_refs << landmark.clone.insert(-1, back_extended_landmark)
+        end
+        landmark_refs.each do |landmark|
+          r=current_rule.clone
+          r[index] = landmark #Replace portion of the rule with our refinement
+          refined_rules << r
+        end
       end
-      return landmark_refs
+      return refined_rules
     end
 
-    # Implements topology refinements.
+    # Implements topology refinements - new landmarks are added to the current rule.
+    # * Takes a landmark and its index in the current rule.
+    # * Applies the rule consisting of all landmarks up to and including the
+    #   current landmarkto find where it matches.
+    # * Only tokens between the label_index and the position at which the partial rule matches are considered.
+    # * Tokens before the rule match location will have no effect, as adding new
+    #   landmarks before or after the current landmark will not make the rule
+    #   match any earlier.
+    # * For every token in this slice of the TokenStream, a new potential rule
+    #   is created by adding a new landmark consisting of that token. This
+    #   is also done for each of that token's matching wildcards.
     def add_new_landmarks(landmark, index)
       topology_refs=[]
       start_pos = current_seed.apply_rule(current_rule[0..index])
       end_pos = current_seed.label_index #No point adding tokens that occur after the label_index
-      current_seed[start_pos...end_pos].to_a.each do |token| #Convert slice to array for normal iteration
+      current_seed[start_pos...end_pos].to_a.each do |token| #Convert TokenStream slice to array for normal iteration
           topology_refs << current_rule.clone.insert(index+1, [token.text])
           token.matching_wildcards.each do |wildcard| #Creates *many* duplicate rules
             topology_refs << current_rule.clone.insert(index+1, [wildcard])
@@ -117,7 +149,6 @@ module Ariel
       return true if test_rule(example, rule)
       return false
     end
-
 
     # Given a LabeledStream and a rule, applies the rule on the stream and
     # returns nil if the match fails, :perfect_match if the match consumes all

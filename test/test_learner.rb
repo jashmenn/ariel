@@ -39,5 +39,7 @@ class TestLearner < Test::Unit::TestCase
   def test_refine
     @learner.current_rule=[["<b>"]]
     assert @learner.refine
+    @learner.current_rule=[["<b>", "Palms"], ["Phone"]]
+    assert @learner.refine
   end
 end
