@@ -55,8 +55,8 @@ class TestTokenStream < Test::Unit::TestCase
   end
 
   def test_apply_rule
-    assert_equal 5, @stream.apply_rule([["This", "is"], [:alpha]])
-    assert_nil @stream.apply_rule([["Disco", "Duck"]])
+    assert_equal 5, @stream.apply_rule(Ariel::Rule.new(["This", "is"], [:alpha]))
+    assert_nil @stream.apply_rule(Ariel::Rule.new(["Disco", "Duck"]))
     assert_equal 0, @stream.apply_rule(nil)
   end
 end

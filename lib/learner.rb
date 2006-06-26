@@ -11,25 +11,26 @@ module Ariel
   # "is"]] is equivalent to skip_to(:html_tag) followed by skip_to(["This",
   # "is"]).
   class Learner
-    attr_accessor :current_rule, :current_seed
+    attr_accessor :current_rule, :current_seed, :candidates
     # *examples is an array of LabeledStreams
     def initialize(*examples)
       @examples=examples
-      @current_rule=[]
+      @current_rule=Rule.new
+      @candidates=[]
       set_seed
     end
 
     # Initiates the rule induction process.
     def learn_rule() 
       combined_rules=[]
-      while not examples.empty?
+      while not @examples.empty?
         set_seed
-        @current_rule = find_best_rule() # Find the rule that matches the most examples and fails on the others/
-        @examples.delete_if {|example| rule_covers?(example, rule)} #separate and conquer!
-        rule << current_rule
+        rule = find_best_rule() # Find the rule that matches the most examples and fails on the others/
+        @examples.delete_if {|example| rule.matches(example)} #separate and conquer!
+        combined_rules << rule
       end
 #      rule = order_rule(rule) #STALKER paper suggests that the generated rules should be ordered. This doesn't make sense, seeing as they are all generated based only on examples not matched by previous rules
-      return rule
+      return combined_rules
     end
 
     # The seed example is chosen from the array of remaining examples. The
@@ -46,24 +47,72 @@ module Ariel
     # token's text or any of it's matching wildcards.
     def generate_initial_candidates
       end_token=current_seed[current_seed.label_index-1]
-      candidates=[]
-      candidates<< [[end_token.text]] # A single rule takes the form [[landmarka, landmarkb], [landmarkc]]
-      end_token.matching_wildcards.each {|wildcard| candidates<< [[wildcard]]}
-      return candidates
+      @candidates<< Rule.new([end_token.text])
+      end_token.matching_wildcards.each {|wildcard| @candidates<< Rule.new([wildcard])}
+      return @candidates.size
     end
 
     # Equivalent of LearnDisjunct in STALKER algorithm. Generates initial
     # candidate rules, refines, and then returns a single rule.
     def find_best_rule
-      candidates = generate_initial_candidates
+      generate_initial_candidates
       begin
-        best_refiner = get_best_refiner(candidates)
-        best_solution = get_best_solution(candidates)
+        best_refiner = get_best_refiner
+        best_solution = get_best_solution
         @current_rule = best_refiner
-        candidates = refine
-      end while (is_not_perfect(best_solution) and best_refiner.empty? != true)
-      return post_process best_solution
+        refine
+      end while (is_not_perfect(best_solution) and best_refiner.empty? != true) #is an infinite loop possible?
+#     return post_process(best_solution)
+      return best_solution
     end
+
+    def is_not_perfect(rule)
+      @examples.each do |example|
+        return true unless rule.matches(example, :perfect, :fail)
+      end
+      return false
+    end
+
+    # Given a list of candidate rules, uses heuristics to determine a rule
+    # considered to be the best refiner. Prefers candidate rules that have:
+    # * Larger coverage = early + correct matches.
+    # * If equal, prefer more early matches - can be made in to fails or perfect matches.
+    #   Intuitively, if there are more equal matches the rule is finding features common to all documents.
+    # * If there is a tie, more failed matches wins - we want matches to fail rather than match incorrectly
+    # * Fewer wildcards - more specific, less likely to match by chance.
+    # * Shorter unconsumed prefixes - closer to matching correctly
+    # * fewer tokens in SkipUntil() - huh? Perhaps because skip_until relies on slot content rather than
+    #   document structure.
+    # * longer end landmarks - prefer "local context" landmarks.
+    def get_best_refiner
+      selector = CandidateSelector.new(@candidates, @examples)
+      selector.best_by_match_type :early, :perfect #Discriminate on coverage
+      selector.best_by_match_type :early
+      selector.best_by_match_type :fail
+#     selector.fewer_wildcards
+#     selector.closest_to_label
+#     selector.longer_end_landmarks
+      best_refiner = selector.random_from_remaining #just pick a random one for now if still multiple
+      return best_refiner
+    end
+
+    # Given a list of candidate rules, use heuristics to determine the best solution. Prefers:
+    # * More correct matches
+    # * More failed matches if a tie - failed matches preferable to incorrect matchees.
+    # * Fewer tokens in SkipUntil()
+    # * fewer wildcards
+    # * longer end landmarks
+    # * shorter unconsumed prefixes
+    def get_best_solution
+      selector = CandidateSelector.new(@candidates, @examples)
+      selector.best_by_match_type :perfect
+      selector.best_by_match_type :fail
+#     selector.fewer_wildcards
+#     selector.closest_to_label
+#     selector.longer_end_landmarks
+      best_solution = selector.random_from_remaining
+      return best_solution
+    end    
 
     # Oversees both landmark (e.g. changing skip_to("<b>") in to
     # skip_to("Price","<b>") and topology (skip_to(:html_tag) to a chain of
@@ -72,17 +121,16 @@ module Ariel
     # arguments. Only landmark refinements implemented for now. When adding new
     # landmarks, the algorithm 
     def refine
-      topology_refs = []
-      landmark_refs = []
-      current_rule.each_with_index do |landmark, index|
-        topology_refs.concat add_new_landmarks(landmark, index) #Topology refinements
-        landmark_refs.concat lengthen_landmark(landmark, index) #Landmark refinements
+      @candidates=[]
+      current_rule.landmarks.each_with_index do |landmark, index|
+        add_new_landmarks(landmark, index) #Topology refinements
+        lengthen_landmark(landmark, index) #Landmark refinements
       end
-      return topology_refs + landmark_refs
+      return @candidates.size
     end
 
     # Implements landmark refinements. Landmarks are lengthened to make them
-    # more specific. BROKEN
+    # more specific.
     # * Takes a landmark and its index in the current rule.
     # * Applies the rule consisting of all previous landmarks in the current
     #   rule, so the landmark can be considered in the context of the point from
@@ -95,8 +143,7 @@ module Ariel
     #   alternative landmark extensions that use relevant wildcards.
     def lengthen_landmark(landmark, index)
       current_seed.rewind #In case apply_rule isn't called as index=0
-      current_seed.apply_rule(current_rule[0..(index-1)]) if index > 0 #Don't care about already matched tokens
-      landmark_refs=[]
+      current_seed.apply_rule(current_rule.partial(0..(index-1))) if index > 0 #Don't care about already matched tokens
       refined_rules=[]
       width = landmark.size
       while current_seed.skip_to(*landmark) #Probably should stop when cur_pos > label_index
@@ -104,19 +151,19 @@ module Ariel
         match_end = current_seed.cur_pos - 1 #pos of last matched token
         preceding_token = current_seed[match_start-1]
         trailing_token = current_seed[match_end+1]
-        (preceding_token.matching_wildcards << preceding_token.text).each do |front_extended_landmark|
-          landmark_refs << landmark.clone.insert(0, front_extended_landmark)
-        end
-        (trailing_token.matching_wildcards << trailing_token.text).each do |back_extended_landmark|
-          landmark_refs << landmark.clone.insert(-1, back_extended_landmark)
-        end
-        landmark_refs.each do |landmark|
-          r=current_rule.clone
-          r[index] = landmark #Replace portion of the rule with our refinement
-          refined_rules << r
-        end
+        front_extended_landmark = landmark.clone.insert(0, preceding_token.text) if preceding_token
+        back_extended_landmark = landmark.clone.insert(-1, trailing_token.text) if trailing_token
+        f = current_rule.deep_clone
+        b = current_rule.deep_clone
+        f.landmarks[index] = front_extended_landmark if front_extended_landmark
+        b.landmarks[index] = back_extended_landmark if back_extended_landmark
+        refined_rules << f
+        refined_rules.concat f.generalise_feature(index, 0)
+        refined_rules << b
+        refined_rules.concat b.generalise_feature(index, -1)
       end
-      return refined_rules
+      @candidates.concat refined_rules
+      return refined_rules.size
     end
 
     # Implements topology refinements - new landmarks are added to the current rule.
@@ -132,41 +179,17 @@ module Ariel
     #   is also done for each of that token's matching wildcards.
     def add_new_landmarks(landmark, index)
       topology_refs=[]
-      start_pos = current_seed.apply_rule(current_rule[0..index])
+      start_pos = current_seed.apply_rule(current_rule.partial(0..index))
       end_pos = current_seed.label_index #No point adding tokens that occur after the label_index
       current_seed[start_pos...end_pos].to_a.each do |token| #Convert TokenStream slice to array for normal iteration
-          topology_refs << current_rule.clone.insert(index+1, [token.text])
-          token.matching_wildcards.each do |wildcard| #Creates *many* duplicate rules
-            topology_refs << current_rule.clone.insert(index+1, [wildcard])
-          end
+          r=current_rule.deep_clone
+          r.landmarks.insert(index+1, [token.text])
+          topology_refs << r
+          topology_refs.concat r.generalise_feature(index+1)
       end
-    return topology_refs.uniq
+    topology_refs.uniq!
+    @candidates.concat topology_refs
+    return topology_refs.size
     end
-
-    # A simple test function that returns true if the rule matches the given
-    # example at all (irrespective of whether it is early or late).
-    def rule_covers?(example, rule)
-      return true if test_rule(example, rule)
-      return false
-    end
-
-    # Given a LabeledStream and a rule, applies the rule on the stream and
-    # returns nil if the match fails, :perfect_match if the match consumes all
-    # tokens up to the labeled token, :early_match if it matches before the
-    # labeled token and :late_match if the match is after the labeled token.
-    def test_rule(example, rule)
-      token_loc = example.apply_rule(rule)
-      if token_loc == nil
-        return nil
-      elsif token_loc == example.label_index #Rule matches perfectly
-        return :perfect_match
-      elsif token_loc < example.label_index #Early match
-        return :early_match
-      elsif token_loc > example.label_index #Late match
-        return :late_match
-      end
-    end
-    
   end
-  
 end

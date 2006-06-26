@@ -1,14 +1,4 @@
 module Ariel  
-      WILDCARDS = {
-        :anything=>/.+/,
-        :numeric=>/\d+/,
-        :alpha_numeric=>/\w+/,
-        :alpha=>/[[:alpha:]]+/,
-        :capitalized=>/[[:upper:]]+\w+/,
-        :all_caps=>/[[:upper:]]+/,
-        :html_tag=>/<\/?\w+>/,
-        :punctuation=>/[[:punct:]]+/
-      }
 
   # Tokens populate a TokenStream. They know their position in the original
   # document, can list the wildcards that match them and determine whether a
@@ -37,10 +27,10 @@ module Ariel
     # string is equal to Token#text, and false if the match fails.
     def matches?(landmark)
       if landmark.kind_of? Symbol
-        raise ArgumentError, "#{landmark} is not a valid wildcard." unless WILDCARDS.has_key? landmark
-        md = WILDCARDS[landmark].match(self.text)
+        raise ArgumentError, "#{landmark} is not a valid wildcard." unless Wildcards.list.has_key? landmark
+        md = Wildcards.list[landmark].match(self.text)
         return false if md.nil?
-        return true if md[0].length == self.text.length  #Regex must match the whole token
+        return true if md[0] == self.text  #Regex must match the whole token
       else
         return true if landmark==self.text
       end
@@ -50,11 +40,7 @@ module Ariel
     # Returns an array of symbols corresponding to the Wildcards that match the
     # Token.
     def matching_wildcards
-      matches = Array.new
-      WILDCARDS.each do |name, regex|
-        (matches << name) if self.matches?(name)
-      end
-      return matches
+      return Wildcards.matching(self.text)
     end
   end
 end

@@ -12,6 +12,7 @@ module Ariel
     # significant, so it may be useful to consider tabs or multiple spaces as
     # tokens.
     DEFAULT_RE=/<\/?\w+>|\w+|[^\w\s]+/ #Don't use POSIX Regexp classes, they may not like UTF chars.
+    # Not a very good regex at all "-<b>" is not tokenised to "-" and "<b>"
     
 
     def initialize()
@@ -92,7 +93,7 @@ module Ariel
     def apply_rule(rule)
       self.rewind #rules are applied from the beginning of the stream
       return cur_pos if rule.nil?
-      rule.each do |landmark|
+      rule.landmarks.each do |landmark|
         return nil unless skip_to(*landmark)
       end
       return cur_pos

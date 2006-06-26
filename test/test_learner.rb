@@ -18,28 +18,21 @@ class TestLearner < Test::Unit::TestCase
   end
 
   def test_generate_initial_candidates
-    t = @learner.generate_initial_candidates
-    assert (t.include? [["("]])
-    assert (t.include? [[:anything]])
-    assert (t.include? [[:punctuation]])
-  end
-
-  def test_test_rule
-    assert_equal :perfect_match, @learner.test_rule(@e[1], [["Phone"], ["("]])
-    assert_equal :early_match, @learner.test_rule(@e[1], [[:anything]])
-    assert_equal :late_match, @learner.test_rule(@e[1], [["508"]])
-    assert_nil @learner.test_rule(@e[1], [["Hawaii"]])
-  end
-
-  def test_rule_covers?
-    assert_equal false, @learner.rule_covers?(@e[1], [["Hawaii"]])
-    assert @learner.rule_covers?(@e[1], [["Phone"], ["("]])
+    @learner.generate_initial_candidates
+    c=@learner.candidates
+    assert (c.include? Ariel::Rule.new(["("]))
+    assert (c.include? Ariel::Rule.new([:anything]))
+    assert (c.include? Ariel::Rule.new([:punctuation]))
   end
 
   def test_refine
-    @learner.current_rule=[["<b>"]]
+    @learner.current_rule=Ariel::Rule.new(["<b>"])
     assert @learner.refine
-    @learner.current_rule=[["<b>", "Palms"], ["Phone"]]
+    @learner.current_rule=Ariel::Rule.new(["<b>", "Palms"], ["Phone"])
     assert @learner.refine
+  end
+
+  def test_learn_rule
+    p @learner.learn_rule
   end
 end

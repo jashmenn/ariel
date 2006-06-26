@@ -12,7 +12,9 @@ class TestNode < Test::Unit::TestCase
     end
   end
   def test_unnested
-    assert (Ariel::Node.new {picture; title; description; url})
+    t=Ariel::Node.new {picture; title; description; url}
+    assert t
+    assert_equal Ariel::Node, t.picture.class
   end
 
   def test_nested
