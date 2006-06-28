@@ -34,6 +34,10 @@ module Ariel
       return alternates
     end
 
+    def wildcard_count
+      @landmarks.flatten.select {|feature| feature.kind_of? Symbol}.size
+    end
+
     # Given a TokenStream and a rule, applies the rule on the stream and
     # returns nil if the match fails. Returns a RuleMatchData Struct with
     # accessors token_loc (the position of the match in the stream) and

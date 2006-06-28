@@ -61,7 +61,7 @@ module Ariel
         best_solution = get_best_solution
         @current_rule = best_refiner
         refine
-      end while (is_not_perfect(best_solution) and best_refiner.empty? != true) #is an infinite loop possible?
+      end while (is_not_perfect(best_solution) and best_refiner.nil? != true) #is an infinite loop possible?
 #     return post_process(best_solution)
       return best_solution
     end
@@ -86,12 +86,12 @@ module Ariel
     # * longer end landmarks - prefer "local context" landmarks.
     def get_best_refiner
       selector = CandidateSelector.new(@candidates, @examples)
-      selector.best_by_match_type :early, :perfect #Discriminate on coverage
-      selector.best_by_match_type :early
-      selector.best_by_match_type :fail
-#     selector.fewer_wildcards
-#     selector.closest_to_label
-#     selector.longer_end_landmarks
+      selector.select_best_by_match_type :early, :perfect #Discriminate on coverage
+      selector.select_best_by_match_type :early
+      selector.select_best_by_match_type :fail
+      selector.select_with_fewer_wildcards
+      selector.select_closest_to_label
+      selector.select_with_longer_end_landmarks
       best_refiner = selector.random_from_remaining #just pick a random one for now if still multiple
       return best_refiner
     end
@@ -105,11 +105,11 @@ module Ariel
     # * shorter unconsumed prefixes
     def get_best_solution
       selector = CandidateSelector.new(@candidates, @examples)
-      selector.best_by_match_type :perfect
-      selector.best_by_match_type :fail
-#     selector.fewer_wildcards
-#     selector.closest_to_label
-#     selector.longer_end_landmarks
+      selector.select_best_by_match_type :perfect
+      selector.select_best_by_match_type :fail
+      selector.select_with_fewer_wildcards
+      selector.select_closest_to_label
+      selector.select_with_longer_end_landmarks
       best_solution = selector.random_from_remaining
       return best_solution
     end    

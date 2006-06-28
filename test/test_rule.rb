@@ -29,4 +29,9 @@ class TestRule < Test::Unit::TestCase
     assert_equal(false, @early_rule.matches(@unlabeled, :early)) #Passing a match type on an unlabeled example
     assert(@perfect_rule.matches(@unlabeled, :fail))
   end
+
+  def test_wildcard_count
+    assert_equal 0, @perfect_rule.wildcard_count
+    assert_equal 1, @early_rule.wildcard_count
+  end
 end
