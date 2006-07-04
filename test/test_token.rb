@@ -5,10 +5,6 @@ class TestToken < Test::Unit::TestCase
   def setup
     @t=Ariel::Token.new('Test', 0, 4)
   end
-  
-  def test_validation
-    assert_raise(ArgumentError) {Ariel::Token.new('Test', 1, 3)}
-  end
 
   def test_matches?
     assert @t.matches?('Test')

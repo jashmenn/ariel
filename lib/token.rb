@@ -12,7 +12,6 @@ module Ariel
     # Token it would be given a start_loc of 5 and and end_loc of 7.
     def initialize(text, start_loc, end_loc)
       @text=text.to_s
-      raise ArgumentError, "end_loc - start_loc != token length" if (end_loc - start_loc) != @text.size
       @start_loc=start_loc
       @end_loc=end_loc
     end
@@ -22,9 +21,10 @@ module Ariel
       return (@start_loc==t.start_loc && @end_loc==t.end_loc && @text==t.text)
     end
       
-    # Accepts either a string or symbol representing a wildcard in the WILDCARDS
-    # hash. Returns true if the whole Token is consumed by the wildcard or the
-    # string is equal to Token#text, and false if the match fails.
+    # Accepts either a string or symbol representing a wildcard in
+    # Wildcards#list. Returns true if the whole Token is consumed by the wildcard or the
+    # string is equal to Token#text, and false if the match fails. Raises an
+    # error if the passed symbol is not a member of Wildcards#list.
     def matches?(landmark)
       if landmark.kind_of? Symbol
         raise ArgumentError, "#{landmark} is not a valid wildcard." unless Wildcards.list.has_key? landmark

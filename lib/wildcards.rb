@@ -1,5 +1,5 @@
 module Ariel  
-  
+  # Contains all wildcards to be used in rule generation.
   class Wildcards
   @@list = {
         :anything=>/.+/,
@@ -11,11 +11,13 @@ module Ariel
         :html_tag=>/<\/?\w+>/,
         :punctuation=>/[[:punct:]]+/
       }
-
+    # Returns the hash of wildcard name (symbol) and regular expression pairs.
     def self.list
       @@list
     end
 
+    # Given a string, will return an array of symbols from Wildcards::list that
+    # match it.
     def self.matching(string)
       matches=[]
       @@list.each do |name, regex|

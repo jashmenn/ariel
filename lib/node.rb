@@ -1,42 +1,27 @@
 module Ariel
   require 'ostruct'
 
-  # Implements a Node object used to represent different fields in the document
-  # tree.
+  # Implements a Node object used to represent the structure of the document
+  # tree. Each node stores start and end rules to extract the desired content
+  # from its parent node.
   class Node < OpenStruct
-    #Think about where metadata about the Node should be stored, e.g. start_loc in
-    #a labeled document, start_rule, end_rule
-    def initialize (hash=nil, &block)
-      super(hash)
-      process_block(&block)
-      @meta={:start_loc=>nil, :end_loc=>nil, :start_rule=>nil, :end_rule=>nil, :text=>nil}
+    attr_accessor :parent, :children, :meta
+    def initialize (meta_hash=nil)
+      super()
+      @meta = OpenStruct.new(meta_hash)
+      @children=[]
     end
 
-    # Used to extend an already created Node. e.g.
-    #  add_children do
-    #    new_field1
-    #    new_field2
-    #  end
-    def add_children(&block)
-      process_block(&block)
+    # Given a Node object and a name, adds a child to the array of children,
+    # setting its parent as the current node, as well as creating an accessor
+    # method matching that name.
+    def add_child(node, name)
+      new_ostruct_member(name)
+      assign = (name.to_s + "=").to_sym
+      send assign, node
+      @children.push node
+      node.parent = self
+      node.meta.name=name
     end
-
-    def process_block(&block)
-      instance_eval(&block) unless block.nil?
-    end
-
-    def method_missing(method, &block)
-      self.new_ostruct_member(method)
-      meth_string = method.to_s
-      assign = (meth_string + "=").to_sym
-      if meth_string.match /_list\z/
-        newobj = ListNode.new(&block)
-      else
-        newobj = Node.new(&block)
-      end
-      self.send assign, newobj
-    end
-
-
   end
 end

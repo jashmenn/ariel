@@ -2,9 +2,10 @@ module Ariel
 
   # A rule contains an array of landmarks (each of which is an array of
   # individual landmark features. This landmark array is accessible through
-  # Rule#landmarks. 
+  # Rule#landmarks. A Rule also has a direction :forward or :back, which
+  # determines whether it is applied from the end or beginning of a tokenstream.
   class Rule
-    attr_accessor :landmarks
+    attr_accessor :landmarks, :direction
     @@RuleMatchData=Struct.new(:token_loc, :type)
     def initialize(*landmarks)
       @landmarks=landmarks
