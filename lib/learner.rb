@@ -14,6 +14,7 @@ module Ariel
     attr_accessor :current_rule, :current_seed, :candidates
     # *examples is an array of LabeledStreams
     def initialize(*examples)
+      debug "ATTENTION: New Learner instantiated with #{examples.size} labeled examples"
       @examples=examples
       @current_rule=Rule.new
       @candidates=[]
@@ -24,12 +25,15 @@ module Ariel
     def learn_rule() 
       combined_rules=[]
       while not @examples.empty?
-        set_seed
-        rule = find_best_rule() # Find the rule that matches the most examples and fails on the others/
+        set_seed unless @examples.include? @current_seed
+        rule = find_best_rule() # Find the rule that matches the most examples and fails on the others
+        prev_size = @examples.size
         @examples.delete_if {|example| rule.matches(example)} #separate and conquer!
+        debug "Removing #{prev_size - @examples.size} examples matched by the generated rule, #{@examples.size} remain"
         combined_rules << rule
       end
 #      rule = order_rule(rule) #STALKER paper suggests that the generated rules should be ordered. This doesn't make sense, seeing as they are all generated based only on examples not matched by previous rules
+      debug "Generated rules: #{combined_rules.inspect}"
       return combined_rules
     end
 
@@ -38,6 +42,7 @@ module Ariel
     def set_seed
       sorted = @examples.sort_by {|example| example.label_index}
       self.current_seed=sorted.first
+      debug "current_seed=#{current_seed.text}"
       return current_seed
     end
 
@@ -46,15 +51,17 @@ module Ariel
     # labeled token is considered, and separate rules are generated that skip_to that
     # token's text or any of it's matching wildcards.
     def generate_initial_candidates
-      end_token=current_seed[current_seed.label_index-1]
+      end_token=current_seed.tokens[current_seed.label_index-1]
       @candidates<< Rule.new([end_token.text])
-      end_token.matching_wildcards.each {|wildcard| @candidates<< Rule.new([wildcard])}
+      @candidates.concat(@candidates[0].generalise_feature(0))
+      debug "Initial candidates: #{@candidates.inspect} created"
       return @candidates.size
     end
 
     # Equivalent of LearnDisjunct in STALKER algorithm. Generates initial
     # candidate rules, refines, and then returns a single rule.
     def find_best_rule
+      @candidates=[]
       generate_initial_candidates
       begin
         best_refiner = get_best_refiner
@@ -63,6 +70,7 @@ module Ariel
         refine
       end while (is_not_perfect(best_solution) and best_refiner.nil? != true) #is an infinite loop possible?
 #     return post_process(best_solution)
+      debug "Rule found: #{best_solution.inspect} that matches "
       return best_solution
     end
 
@@ -93,6 +101,7 @@ module Ariel
       selector.select_closest_to_label
       selector.select_with_longer_end_landmarks
       best_refiner = selector.random_from_remaining #just pick a random one for now if still multiple
+      debug "best_refiner found => #{best_refiner.inspect}"
       return best_refiner
     end
 
@@ -111,6 +120,7 @@ module Ariel
       selector.select_closest_to_label
       selector.select_with_longer_end_landmarks
       best_solution = selector.random_from_remaining
+      debug "best_solution found => #{best_solution.inspect}"
       return best_solution
     end    
 
@@ -118,8 +128,7 @@ module Ariel
     # skip_to("Price","<b>") and topology (skip_to(:html_tag) to a chain of
     # skip_to() commands). Takes the current rule being generated and the
     # example against which it is being created (the current seed_rule) as
-    # arguments. Only landmark refinements implemented for now. When adding new
-    # landmarks, the algorithm 
+    # arguments. 
     def refine
       @candidates=[]
       current_rule.landmarks.each_with_index do |landmark, index|
@@ -149,8 +158,8 @@ module Ariel
       while current_seed.skip_to(*landmark) #Probably should stop when cur_pos > label_index
         match_start = (current_seed.cur_pos - 1) - width #pos of first matched token
         match_end = current_seed.cur_pos - 1 #pos of last matched token
-        preceding_token = current_seed[match_start-1]
-        trailing_token = current_seed[match_end+1]
+        preceding_token = current_seed.tokens[match_start-1]
+        trailing_token = current_seed.tokens[match_end+1]
         front_extended_landmark = landmark.clone.insert(0, preceding_token.text) if preceding_token
         back_extended_landmark = landmark.clone.insert(-1, trailing_token.text) if trailing_token
         f = current_rule.deep_clone
@@ -163,6 +172,7 @@ module Ariel
         refined_rules.concat b.generalise_feature(index, -1)
       end
       @candidates.concat refined_rules
+      debug "#{refined_rules.size} landmark refinements generated"
       return refined_rules.size
     end
 
@@ -181,7 +191,7 @@ module Ariel
       topology_refs=[]
       start_pos = current_seed.apply_rule(current_rule.partial(0..index))
       end_pos = current_seed.label_index #No point adding tokens that occur after the label_index
-      current_seed[start_pos...end_pos].to_a.each do |token| #Convert TokenStream slice to array for normal iteration
+      current_seed.tokens[start_pos...end_pos].each do |token|
           r=current_rule.deep_clone
           r.landmarks.insert(index+1, [token.text])
           topology_refs << r
@@ -189,6 +199,7 @@ module Ariel
       end
     topology_refs.uniq!
     @candidates.concat topology_refs
+    debug "#{topology_refs.size} topology refinements generated"
     return topology_refs.size
     end
   end

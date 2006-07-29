@@ -1,7 +1,7 @@
-require 'test/unit'
 require 'ariel'
+require 'ariel_test_case'
 
-class TestWildcards < Test::Unit::TestCase
+class TestWildcards < Ariel::TestCase
   
   def test_list
     assert (wildcards=Ariel::Wildcards.list)

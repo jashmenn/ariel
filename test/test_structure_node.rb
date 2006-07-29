@@ -1,7 +1,7 @@
-require 'test/unit'
 require 'ariel'
+require 'ariel_test_case'
 
-class TestStructureNode < Test::Unit::TestCase
+class TestStructureNode < Ariel::TestCase
   def setup
     @tree=Ariel::StructureNode.new do |r|
       r.item_info do |i|
@@ -15,6 +15,8 @@ class TestStructureNode < Test::Unit::TestCase
     t=Ariel::StructureNode.new {|r| r.picture; r.title; r.description; r.url}
     assert t
     assert_equal Ariel::StructureNode, t.picture.class
+    p t.meta.name
+    p t.picture.meta.name
   end
 
   def test_nested
@@ -49,24 +51,6 @@ class TestStructureNode < Test::Unit::TestCase
     assert @tree.item_info.methods.include?('picture')
   end
 
-  def test_extract_children
-    t = Ariel::StructureNode.new {|t| t.one; t.two; t.three}
-    tokenstream = Ariel::TokenStream.new
-    tokenstream.tokenize("This is <>one<> Now we have !two!. Oh look, it's ^three^.")
-    t.one.meta.start_rule = Ariel::Rule.new(["<>"])
-    t.one.meta.end_rule = Ariel::Rule.new(["<>"])
-    t.one.meta.end_rule.direction = :back
-    t.two.meta.start_rule = Ariel::Rule.new(["have", "!"])
-    t.two.meta.end_rule = Ariel::Rule.new(["!."])
-    t.two.meta.end_rule.direction = :back
-    t.three.meta.start_rule = Ariel::Rule.new([:alpha], ["^"])
-    t.three.meta.end_rule = Ariel::Rule.new(["^."])
-    t.three.meta.end_rule.direction = :back
-    dest = Ariel::Node.new
-    t.extract_children(tokenstream, dest)
-    
-  end
-
   def test_apply_extraction_tree_on
     t = Ariel::StructureNode.new do |r|
       r.title
@@ -80,6 +64,7 @@ class TestStructureNode < Test::Unit::TestCase
 There was once a test designed to assess whether apply_extraction_tree_on worked.}
     tokenstream = Ariel::TokenStream.new
     tokenstream.tokenize(str)
+    root = Ariel::ExtractedNode.new(tokenstream, :structure=>t, :name=>:root)
     t.title.meta.start_rule = Ariel::Rule.new(["Title", ":"])
     t.title.meta.end_rule = Ariel::Rule.new(["<b>"])
     t.title.meta.end_rule.direction = :back
@@ -92,7 +77,7 @@ There was once a test designed to assess whether apply_extraction_tree_on worked
     t.content.body.meta.start_rule = Ariel::Rule.new(["i", ">"])
     t.content.body.meta.end_rule = Ariel::Rule.new()
     t.content.body.meta.end_rule.direction = :back
-    t.apply_extraction_tree_on tokenstream
+    t.apply_extraction_tree_on root
   end
 
 

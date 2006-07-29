@@ -16,6 +16,7 @@ module Ariel
     # will select the rules that have the most matches that are early or
     # perfect.
     def select_best_by_match_type(*match_types)
+      debug "Selecting best by match types #{match_types}"
       return @candidates if @candidates.size==1
       @candidates = highest_scoring_by do |rule|
         rule_score=0
@@ -48,15 +49,18 @@ module Ariel
       score_hash.each do |candidate_index, score|
         highest_scorers << @candidates[candidate_index] if score==best_score
       end
+      debug "#{highest_scorers.size} highest_scorers were found, with a score of #{best_score}"
       return highest_scorers
     end
 
     def select_with_fewer_wildcards
+      debug "Selecting the rules with the fewest wildcards"
       @candidates = highest_scoring_by {|rule| -rule.wildcard_count} #hack or not?
       return @candidates
     end
 
     def select_closest_to_label
+      debug "Selecting rules that match the examples closest to the label"
       @candidates = highest_scoring_by do |rule|
         rule_score=0
         matched_examples=0
@@ -76,12 +80,14 @@ module Ariel
     end
 
     def select_with_longer_end_landmarks
+      debug "Selecting rules that have longer end landmarks"
       @candidates = highest_scoring_by {|rule| rule.landmarks.last.size}
     end
 
     # Returns a random candidate. Meant for making the final choice in case
     # previous selections have still left multiple candidates.
     def random_from_remaining
+      debug "Selecting random from last #{candidates.size} candidate rules"
       @candidates.sort_by {rand}.first
     end
   end

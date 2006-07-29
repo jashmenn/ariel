@@ -49,7 +49,7 @@ module Ariel
       token_loc = tokenstream.apply_rule(self)
       return nil unless token_loc
       md = @@RuleMatchData.new(token_loc)
-      if tokenstream.respond_to? :label_index
+      if tokenstream.label_index
         idx = tokenstream.label_index
         md.type = :perfect if token_loc == idx
         md.type = :early if token_loc < idx

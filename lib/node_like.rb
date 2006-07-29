@@ -1,16 +1,7 @@
 module Ariel
-  require 'ostruct'
-
-  # Implements a Node object used to represent the structure of the document
-  # tree. Each node stores start and end rules to extract the desired content
-  # from its parent node.
-  class Node < OpenStruct
+  
+  module NodeLike
     attr_accessor :parent, :children, :meta
-    def initialize (meta_hash=nil)
-      super()
-      @meta = OpenStruct.new(meta_hash)
-      @children=[]
-    end
 
     # Given a Node object and a name, adds a child to the array of children,
     # setting its parent as the current node, as well as creating an accessor
@@ -22,6 +13,15 @@ module Ariel
       @children.push node
       node.parent = self
       node.meta.name=name
+    end
+
+
+    def each_descendant
+      node_queue=[self.children]
+      until node_queue.empty? do
+        node_queue.concat node_queue.first.children
+        yield node_queue.shift
+      end
     end
   end
 end

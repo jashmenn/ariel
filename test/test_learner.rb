@@ -1,15 +1,13 @@
-require 'test/unit'
 require 'ariel'
+require 'ariel_test_case'
 
-class TestLearner < Test::Unit::TestCase
+class TestLearner < Ariel::TestCase
+  include Fixtures
+
   def setup
     #Examples stolen from the STALKER paper. Target to extract is the area
     #codes.
-    @e=Array.new(4) {Ariel::LabeledStream.new}
-    @e[0].tokenize("513 Pico <b>Venice</b>, Phone: 1-<b>800</b>-555-1515", 36)
-    @e[1].tokenize("90 Colfax, <b> Palms </b>, Phone: (818) 508-1570", 35)
-    @e[2].tokenize("523 1st St., <b> LA </b>, Phone: 1-<b>888</b>-578-2293", 38)
-    @e[3].tokenize("403 La Tijera, <b> Watts </b>, Phone: (310) 798-0008", 39)
+    @e=@@labeled_addresses
     @learner=Ariel::Learner.new(*@e)
   end
 

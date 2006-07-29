@@ -1,59 +1,154 @@
 module Ariel   
+
+  require 'enumerator'
+  
   # A TokenStream is an Array subclass designed to handle the generation and
   # management of a collection of Token objects. A TokenStream knows its current
   # position (TokenStream#cur_pos), which is incremented when any of the
   # Enumerable methods are used (due to the redefinition of TokenStream#each).
   # As you advance through the stream, the current token is always returned and
-  # then consumed.
-  class TokenStream < Array
-    attr_accessor :cur_pos, :original_text
-    # Should be suitable for most standard extraction tasks, but you may (for
-    # instance) be dealing with a document where whitespace is semantically
-    # significant, so it may be useful to consider tabs or multiple spaces as
-    # tokens.
-    DEFAULT_RE=/<\/?\w+>|\w+|[^\w\s]+/ #Don't use POSIX Regexp classes, they may not like UTF chars.
-    # Not a very good regex at all "-<b>" is not tokenised to "-" and "<b>"
+  # then consumed. A TokenStream also provides methods for finding patterns in a
+  # given stream, much like StringScanner but for an array of tokens.
+  class TokenStream
+    include Enumerable
+    attr_accessor :tokens, :cur_pos, :re_wanted_tokens, :re_unwanted_tokens, :label_index, :raw_text
+    
 
     def initialize()
-      super()
+      @tokens=[]
       @cur_pos=0
-      @original_text = ""
+      @raw_text = ""
+      @re_wanted_tokens = [
+      /<\/?\w+>/, # Match html tags that don't have attributes
+      /\d+/, # Match any numbers, probably good to make a split
+      /\b\w+\b/, # Pick up words, will split at punctuation
+      /\S/ # Grab any characters left over that aren't whitespace
+      ]
+      @re_unwanted_tokens = []
     end
 
-    # Uses either DEFAULT_RE or your own custom regular expression to split
-    # an input document in to individual Tokens, and store them in the
-    # TokenStream object. The stream_offset parameter allows you to specify an
-    # an offset for the location in the original document from which your input
-    # starts (so that each Token's start_loc and end_loc will be correct). This
-    # may be useful when loading in chunks, or only a portion of a larger
-    # document is tokenised. Returns the number of Tokens created.
-    def tokenize(input, stream_offset=nil, regex=DEFAULT_RE)
-      unless stream_offset  #This handles the case where a TokenStream is built in chunks
-        if self.empty?
-          stream_offset=0
-        else
-          stream_offset=self.last.end_loc
-        end
-      end
-      matches=[]
-      input.scan(regex) { matches << Regexp.last_match } #This is unfortunate. Without RCR 276 I'm not sure what else to do.
-      matches.each do |match| 
-        text, start_loc, end_loc = match[0], match.offset(0)[0], match.offset(0)[1]
-        self << Token.new(text, start_loc+stream_offset, end_loc+stream_offset)
-      end
-      @original_text+=input
-      return matches.length
+    def size
+      @tokens.size
     end
+    alias :length :size
+
+    # Set a label at a given string position
+    def set_label_at(pos)
+      token_pos=nil
+      @tokens.each_index {|i| token_pos = i if @tokens[i].start_loc == pos}
+      if token_pos.nil?
+        raise ArgumentError, "Given string position does not match the start of any token"
+      else
+        @label_index = token_pos
+        debug "Token ##{label_index} - \"#{@tokens[label_index].text}\" labeled."
+      end
+    end
+
+    def text
+      out = @raw_text[@tokens.first.start_loc...@tokens.last.end_loc]
+      if @original_text_contains_labels
+        LabelUtils.clean_string(out)
+      else
+        out
+      end
+    end
+
+    # The tokenizer operates on a string by splitting a string at every point it
+    # finds a match to a regular expression. Each match is added as a token, and
+    # the strings between each match are stored along with their original
+    # offsets. The same is then done with the next regular expression on each of
+    # these split strings, and new tokens are created with the correct offset in
+    # the original text. Any characters left unmatched by any of the regular
+    # expressions in @re_wanted_tokens are discarded. This approach allows a
+    # hierarchy of regular expressions to work simply and easily. A simply
+    # regular expression to match html tags might operate first, and then later
+    # expressions that pick up runs of word characters can operate on what's
+    # left. If contains_labels is set to true when calling tokenize, the
+    # tokenizer will first remove and discard any occurences of labels (as
+    # defined by the Regex set in LabelUtils) before matching and adding tokens.
+    def tokenize(input, contains_labels=false)
+      string_array=[[input, 0]]
+      @raw_text = input
+      @original_text_contains_labels=contains_labels
+      @re_unwanted_tokens.insert(0, LabelUtils.any_label_regex) if contains_labels==true
+      @re_unwanted_tokens.each {|regex| split_string_array_by_regex(string_array, regex, false)}
+      @re_wanted_tokens.each {|regex| split_string_array_by_regex(string_array, regex)}
+      @tokens.sort!
+      @tokens.size
+    end
+
+    def split_string_array_by_regex(string_array, regex, add_matches=true)
+      new_string_array = []
+      string_array.each do |arr| 
+        result = split_by_regex(arr[0], arr[1], regex, add_matches)
+        new_string_array.concat result
+      end
+      string_array.replace new_string_array
+    end
+
+    def split_by_regex(string, offset, regex, add_matches=true)
+      split_points=[0]
+      string_holder = []
+      string.scan(regex) do |s|
+        match = Regexp.last_match
+        split_points << match.begin(0)
+        split_points << match.end(0)
+        @tokens << Token.new(match[0], match.begin(0)+offset, match.end(0)+offset) unless add_matches==false
+      end
+      split_points << string.size
+      split_points.each_slice(2) do |s_pos, e_pos|
+        split_string = string[s_pos...e_pos]
+        string_holder << [split_string, s_pos+offset] unless split_string.empty?
+      end
+      return string_holder
+    end
+
+    # Returns the slice of the current instance containing all the tokens
+    # between the token where the start_loc == the left parameter and the token
+    # where the end_loc == the right paramater
+    def slice_by_string_pos(left, right)
+      l_index=nil
+      r_index=nil
+      @tokens.each_index {|i| l_index = i if @tokens[i].start_loc == left}
+      @tokens.each_index {|i| r_index = i if @tokens[i].end_loc == right}
+      if l_index.nil? or r_index.nil?
+        raise ArgumentError, "Cannot slice between those locations"
+      else
+        return slice_by_token_index(l_index, r_index)
+      end
+    end
+
+    def slice_by_token_index(l_index, r_index)
+      sliced = self.dup
+      sliced.tokens=@tokens[l_index..r_index]
+      return sliced
+    end
+
     
     # Returns the current Token and consumes it.
 		def advance
       @cur_pos+=1
-      self[@cur_pos-1]
+      @tokens[@cur_pos-1]
     end
     
     # Return to the beginning of the TokenStream.
     def rewind
       @cur_pos=0
+    end
+
+    # Returns the reversed TokenStream. label_index is calculated so it still
+    # refers to the same Token. Useful for generating rules that consume tokens
+    # from the end of the document.
+    def reverse
+      reversed=self.reverse!
+      self.reverse!
+    end
+
+    # Same as LabeledStream#reverse, but changes are made in place.
+    def reverse!
+      @tokens.reverse!
+      @label_index = (self.size-(@label_index + 1)) unless @label_index.nil?
+      return self
     end
     
     # Accepts an array of Strings representing text to be matched in
@@ -84,16 +179,6 @@ module Ariel
     # Returns the current Token.
     def current_token
       self[@cur_pos]
-    end
-
-    def [](arg)
-      result = super
-      if result.class == self.class
-        result.cur_pos = 0
-        result.original_text = @original_text
-        
-      end
-      return result
     end
 
     # Will attempt to apply a Rule object, asking it for the direction in which

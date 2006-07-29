@@ -1,7 +1,7 @@
-require 'test/unit'
 require 'ariel'
+require 'ariel_test_case'
 
-class TestToken < Test::Unit::TestCase
+class TestToken < Ariel::TestCase
   def setup
     @t=Ariel::Token.new('Test', 0, 4)
   end

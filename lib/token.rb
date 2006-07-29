@@ -20,6 +20,10 @@ module Ariel
     def ==(t)
       return (@start_loc==t.start_loc && @end_loc==t.end_loc && @text==t.text)
     end
+
+    def <=>(t)
+      @start_loc <=> t.start_loc
+    end
       
     # Accepts either a string or symbol representing a wildcard in
     # Wildcards#list. Returns true if the whole Token is consumed by the wildcard or the

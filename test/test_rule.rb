@@ -1,10 +1,11 @@
-require 'test/unit'
 require 'ariel'
+require 'ariel_test_case'
 
-class TestRule < Test::Unit::TestCase
+class TestRule < Ariel::TestCase
   def setup
-    @labeled=Ariel::LabeledStream.new
-    @labeled.tokenize("90 Colfax, <b> Palms </b>, Phone: (818) 508-1570", 35)
+    @labeled=Ariel::TokenStream.new
+    @labeled.tokenize("90 Colfax, <b> Palms </b>, Phone: (818) 508-1570")
+    @labeled.set_label_at 35
     @perfect_rule=Ariel::Rule.new(["Phone"], ["("])
     @early_rule=Ariel::Rule.new([:anything])
     @late_rule=Ariel::Rule.new(["508"])
