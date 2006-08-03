@@ -11,15 +11,16 @@ module Ariel
       @children=[]
       @meta = OpenStruct.new(meta_hash)
       @meta.node_type = type
+      @meta.extracted_nodes=[]
       yield self if block_given?
     end
 
     # Used to extend an already created Node. e.g.
-    #  node.extend do |r|
+    #  node.extend_structure do |r|
     #    r.new_field1
     #    r.new_field2
     #  end
-    def extend(&block)
+    def extend_structure(&block)
       yield self if block_given?
     end
 
@@ -28,13 +29,24 @@ module Ariel
     # the list is extracted and so are each of the list items. In this case,
     # only the list items are yielded.
     def extract_from(node)
-      start_token_pos=node.tokenstream.apply_rule(@meta.start_rule) #TODO must handle rules that don't match
-      end_token_pos=node.tokenstream.apply_rule(@meta.end_rule)
+      if @meta.start_rule.kind_of? Proc
+        start_token_pos=@meta.start_rule.call(node.tokenstream, self)
+        debug "start_token_pos=#{start_token_pos}"
+      else
+        start_token_pos = node.tokenstream.apply_rule(@meta.start_rule)
+      end
+      if @meta.end_rule.kind_of? Proc
+        end_token_pos = @meta.end_rule.call(node.tokenstream, self)
+        debug "end_token_pos=#{end_token_pos}"
+      else
+        end_token_pos=node.tokenstream.apply_rule(@meta.end_rule)
+      end
       return false if (start_token_pos.nil? or end_token_pos.nil?) #Extraction failed, should an empty node be added anyway?
       newstream = node.tokenstream.slice_by_token_index(start_token_pos, end_token_pos)
       extracted_node = ExtractedNode.new(newstream, :name=>meta.name, :structure=>self)
       node.add_child extracted_node, meta.name
       yield extracted_node if block_given? and meta.node_type != :list
+      @meta.extracted_nodes << extracted_node
 
       if self.meta.node_type == :list
         #do list stuff
@@ -52,6 +64,7 @@ module Ariel
           child.extract_from(new_parent) {|node| extraction_queue.push node} #extract_from returns only those nodes that need further examination
         end
       end
+      return root_node
     end
 
     def method_missing(method, &block)

@@ -4,6 +4,13 @@ Title: <l:title>The test of the Century</l:title>
 <l:content><b>Excerpt</b>: <i><l:excerpt>A look back at what could be considered the greatest ever test.</l:excerpt></i>
 <l:body>There was once a test designed to assess whether apply_extraction_tree_on worked.</l:body></l:content>
 EOS
+  @@labeled_document_structure = Ariel::StructureNode.new do |r|
+    r.title
+    r.content do |c|
+      c.excerpt
+      c.body
+    end
+  end
   @@unlabeled_document=<<EOS
 Title: The test of the Century
 <b>Excerpt</b>: <i>A look back at what could be considered the greatest ever test.</i>

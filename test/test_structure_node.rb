@@ -43,11 +43,11 @@ class TestStructureNode < Ariel::TestCase
     assert_equal :list, doc_tree.restaurant_list.meta.node_type
   end
 
-  def test_extend
-    assert (@tree.extend {|r| r.site_copyright; r.logo;})
+  def test_extend_structure
+    assert (@tree.extend_structure {|r| r.site_copyright; r.logo;})
     assert @tree.methods.include?('site_copyright')
     assert @tree.methods.include?('logo')
-    assert (@tree.item_info.extend {|i| i.picture})
+    assert (@tree.item_info.extend_structure {|i| i.picture})
     assert @tree.item_info.methods.include?('picture')
   end
 

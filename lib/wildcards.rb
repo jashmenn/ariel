@@ -1,7 +1,8 @@
 module Ariel  
   # Contains all wildcards to be used in rule generation.
   class Wildcards
-  @@list = {
+    private_class_method :new
+    @@list = {
         :anything=>/.+/,
         :numeric=>/\d+/,
         :alpha_numeric=>/\w+/,

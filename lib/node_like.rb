@@ -16,8 +16,12 @@ module Ariel
     end
 
 
-    def each_descendant
-      node_queue=[self.children]
+    def each_descendant(include_self=false)
+      if include_self
+        node_queue=[self]
+      else
+        node_queue=self.children
+      end
       until node_queue.empty? do
         node_queue.concat node_queue.first.children
         yield node_queue.shift

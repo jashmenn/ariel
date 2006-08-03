@@ -31,6 +31,6 @@ class TestLearner < Ariel::TestCase
   end
 
   def test_learn_rule
-    p @learner.learn_rule
+    rule=@learner.learn_rule
   end
 end

@@ -6,14 +6,15 @@ module Ariel
   # rule is recorded, the covered examples are removed and the process repeats
   # on the remaining examples. Once all examples are covered, the disjunct of
   # all generated rules is returned.
-  #
-  # At least for now, rules consist of an array of arrays, e.g. [[:html_tag], ["This",
-  # "is"]] is equivalent to skip_to(:html_tag) followed by skip_to(["This",
-  # "is"]).
+
   class Learner
     attr_accessor :current_rule, :current_seed, :candidates
-    # *examples is an array of LabeledStreams
+    
+    # Takes a list of TokenStreams containing labels.
     def initialize(*examples)
+      if examples.any? {|example| example.label_index.nil?}
+        raise ArgumentError, "Passed a TokenStream with no label"
+      end
       debug "ATTENTION: New Learner instantiated with #{examples.size} labeled examples"
       @examples=examples
       @current_rule=Rule.new
@@ -21,7 +22,11 @@ module Ariel
       set_seed
     end
 
-    # Initiates the rule induction process.
+    # Initiates and operates the whole rule induction process. Finds an example
+    # to use as its seed example, then finds a rule that matches the maximum
+    # number of examples correctly and fails on all overs. All matched examples
+    # are then removed and the process is repeated considering all examples that
+    # remain. Returns an array of the rules found (in order).
     def learn_rule() 
       combined_rules=[]
       while not @examples.empty?
@@ -63,22 +68,30 @@ module Ariel
     def find_best_rule
       @candidates=[]
       generate_initial_candidates
-      begin
+      while true
         best_refiner = get_best_refiner
         best_solution = get_best_solution
         @current_rule = best_refiner
+        break unless is_not_perfect(best_solution)
         refine
-      end while (is_not_perfect(best_solution) and best_refiner.nil? != true) #is an infinite loop possible?
+      end
 #     return post_process(best_solution)
       debug "Rule found: #{best_solution.inspect} that matches "
       return best_solution
     end
 
     def is_not_perfect(rule)
+      perfect_count=0
+      fail_count=0
       @examples.each do |example|
-        return true unless rule.matches(example, :perfect, :fail)
+        perfect_count+=1 if rule.matches(example, :perfect)
+        fail_count+=1 if rule.matches(example, :fail)
       end
-      return false
+      if (perfect_count >= 1) && (fail_count == (@examples.size - perfect_count))
+        return false
+      else
+        return true
+      end
     end
 
     # Given a list of candidate rules, uses heuristics to determine a rule

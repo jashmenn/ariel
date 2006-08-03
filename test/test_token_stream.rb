@@ -44,12 +44,12 @@ class TestTokenStream < Ariel::TestCase
     assert @stream.skip_to("See", "below")
     assert_equal 7, @stream.cur_pos
     @stream.rewind
-    @stream.skip_to("is", :alpha_numeric)
-    assert_equal 3, @stream.cur_pos
+    @stream.skip_to(:anything, "below")
+    assert_equal 7, @stream.cur_pos
   end
 
   def test_tokenize
-    assert_equal 8, @stream.length
+    assert_equal 8, @stream.tokens.length
     @stream.each do |token|
       assert_equal @text[token.start_loc...token.end_loc], token.text
     end
@@ -73,7 +73,16 @@ class TestTokenStream < Ariel::TestCase
 
   def test_raw_text
     assert_equal @text, @stream.raw_text
-    assert_equal @@labeled_document, @labeled_stream.raw_text
+    assert_equal @@labeled_document.chomp, @labeled_stream.raw_text
   end
-    
+
+  def test_text
+    assert_equal @text, @stream.text
+    assert_equal @@unlabeled_document.chomp, @labeled_stream.text
+  end
+
+  def test_slice_by_token_index
+    assert sliced=@stream.slice_by_token_index(1,3)
+    assert_equal @text[sliced.tokens.first.start_loc...sliced.tokens.last.end_loc], sliced.text
+  end
 end
