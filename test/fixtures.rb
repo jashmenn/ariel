@@ -5,10 +5,10 @@ Title: <l:title>The test of the Century</l:title>
 <l:body>There was once a test designed to assess whether apply_extraction_tree_on worked.</l:body></l:content>
 EOS
   @@labeled_document_structure = Ariel::StructureNode.new do |r|
-    r.title
-    r.content do |c|
-      c.excerpt
-      c.body
+    r.item :title
+    r.item :content do |c|
+      c.item :excerpt
+      c.item :body
     end
   end
   @@unlabeled_document=<<EOS

@@ -58,12 +58,6 @@ class TestTokenStream < Ariel::TestCase
     end
   end
 
-  def test_apply_rule
-    assert_equal 3, @stream.apply_rule(Ariel::Rule.new(["This", "is"], [:alpha_numeric]))
-    assert_nil @stream.apply_rule(Ariel::Rule.new(["Disco", "Duck"]))
-    assert_equal 0, @stream.apply_rule(nil)
-  end
-
   def test_set_label_at
     assert_raise(ArgumentError) {@stream.set_label_at 1}
     assert_nil @stream.label_index

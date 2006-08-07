@@ -16,8 +16,8 @@ context "A new TokenStream" do
     @tokenstream.tokens.should_be_empty
   end
 
-  specify "Should have a size of 0" do
-    @tokenstream.size.should_equal 0
+  specify "Should not contain any tokens" do
+    @tokenstream.tokens.size.should_equal 0
   end
 
   specify "Should return an empty string went sent the message raw_text" do
@@ -33,6 +33,10 @@ context "A new TokenStream" do
     @tokenstream.cur_pos.should_equal 1
     @tokenstream.advance
     @tokenstream.cur_pos.should_equal 1
+  end
+
+  specify "Should not be reversed" do
+    @tokenstream.should_not_be_reversed
   end
 end
 

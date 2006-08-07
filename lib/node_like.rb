@@ -6,24 +6,19 @@ module Ariel
     # Given a Node object and a name, adds a child to the array of children,
     # setting its parent as the current node, as well as creating an accessor
     # method matching that name.
-    def add_child(node, name)
-      new_ostruct_member(name)
-      assign = (name.to_s + "=").to_sym
-      send assign, node
-      @children.push node
+    def add_child(node) 
+      @children[node.meta.name]=node
       node.parent = self
-      node.meta.name=name
     end
-
 
     def each_descendant(include_self=false)
       if include_self
         node_queue=[self]
       else
-        node_queue=self.children
+        node_queue=self.children.values
       end
       until node_queue.empty? do
-        node_queue.concat node_queue.first.children
+        node_queue.concat node_queue.first.children.values
         yield node_queue.shift
       end
     end

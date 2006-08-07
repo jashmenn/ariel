@@ -22,8 +22,7 @@ module Ariel
     def self.matching(string)
       matches=[]
       @@list.each do |name, regex|
-        md=regex.match(string)
-        if md && md[0]==string
+        if string[regex]==string
           yield name if block_given?
           matches << name
         end

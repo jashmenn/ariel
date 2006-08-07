@@ -1,30 +1,21 @@
 module Ariel
   require 'ostruct'
 
-  # Implements a Node object used to represent the structure of the document
-  # tree. Each node stores start and end rules to extract the desired content
-  # from its parent node.
-  class ExtractedNode < OpenStruct
+  # Each ExtractedNode has a name, a tokenstream and a structure which points to
+  # the relevant StructureNode.
+  class ExtractedNode
     include NodeLike
     attr_accessor :tokenstream
-    def initialize (tokenstream, meta_hash=nil)
+
+    def initialize(name, tokenstream, structure)
       super()
-      @children=[]
-      @meta = OpenStruct.new(meta_hash)
+      @children={}
+      @meta = OpenStruct.new({:name=>name, :structure=>structure})
       @tokenstream=tokenstream
-      @meta.name=:root unless @meta.name
     end
 
     def extracted_text
-      tokenstream.get_text
+      tokenstream.text
     end
-
-    def extracted_tokens
-      tokenstream.to_a
-    end
-
-
   end
-
-
 end

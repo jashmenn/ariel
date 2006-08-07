@@ -8,7 +8,7 @@ module Ariel
   # all generated rules is returned.
 
   class Learner
-    attr_accessor :current_rule, :current_seed, :candidates
+    attr_accessor :current_rule, :current_seed, :candidates, :direction
     
     # Takes a list of TokenStreams containing labels.
     def initialize(*examples)
@@ -17,7 +17,6 @@ module Ariel
       end
       debug "ATTENTION: New Learner instantiated with #{examples.size} labeled examples"
       @examples=examples
-      @current_rule=Rule.new
       @candidates=[]
       set_seed
     end
@@ -27,13 +26,15 @@ module Ariel
     # number of examples correctly and fails on all overs. All matched examples
     # are then removed and the process is repeated considering all examples that
     # remain. Returns an array of the rules found (in order).
-    def learn_rule() 
+    def learn_rule(direction)
+      @direction=direction
+      @current_rule=Rule.new(direction)
       combined_rules=[]
       while not @examples.empty?
         set_seed unless @examples.include? @current_seed
         rule = find_best_rule() # Find the rule that matches the most examples and fails on the others
         prev_size = @examples.size
-        @examples.delete_if {|example| rule.matches(example)} #separate and conquer!
+        @examples.delete_if {|example| rule.apply_to(example)} #separate and conquer!
         debug "Removing #{prev_size - @examples.size} examples matched by the generated rule, #{@examples.size} remain"
         combined_rules << rule
       end
@@ -57,7 +58,7 @@ module Ariel
     # token's text or any of it's matching wildcards.
     def generate_initial_candidates
       end_token=current_seed.tokens[current_seed.label_index-1]
-      @candidates<< Rule.new([end_token.text])
+      @candidates<< Rule.new(@direction, [[end_token.text]])
       @candidates.concat(@candidates[0].generalise_feature(0))
       debug "Initial candidates: #{@candidates.inspect} created"
       return @candidates.size
@@ -80,6 +81,8 @@ module Ariel
       return best_solution
     end
 
+    # A given rule is_not_perfect if it doesn't split the examples by perfectly
+    # matching some, and failing to match all of the rest.
     def is_not_perfect(rule)
       perfect_count=0
       fail_count=0
@@ -165,7 +168,8 @@ module Ariel
     #   alternative landmark extensions that use relevant wildcards.
     def lengthen_landmark(landmark, index)
       current_seed.rewind #In case apply_rule isn't called as index=0
-      current_seed.apply_rule(current_rule.partial(0..(index-1))) if index > 0 #Don't care about already matched tokens
+      result = @current_rule.partial(0..(index-1)).apply_to current_seed if index > 0 #Don't care about already matched tokens
+      return 0 unless result # Rule doesn't match, no point refining
       refined_rules=[]
       width = landmark.size
       while current_seed.skip_to(*landmark) #Probably should stop when cur_pos > label_index
@@ -192,7 +196,7 @@ module Ariel
     # Implements topology refinements - new landmarks are added to the current rule.
     # * Takes a landmark and its index in the current rule.
     # * Applies the rule consisting of all landmarks up to and including the
-    #   current landmarkto find where it matches.
+    #   current landmark to find where it matches.
     # * Only tokens between the label_index and the position at which the partial rule matches are considered.
     # * Tokens before the rule match location will have no effect, as adding new
     #   landmarks before or after the current landmark will not make the rule
@@ -202,7 +206,7 @@ module Ariel
     #   is also done for each of that token's matching wildcards.
     def add_new_landmarks(landmark, index)
       topology_refs=[]
-      start_pos = current_seed.apply_rule(current_rule.partial(0..index))
+      start_pos = current_rule.partial(0..index).apply_to(current_seed)
       end_pos = current_seed.label_index #No point adding tokens that occur after the label_index
       current_seed.tokens[start_pos...end_pos].each do |token|
           r=current_rule.deep_clone

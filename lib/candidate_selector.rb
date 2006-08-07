@@ -7,7 +7,7 @@ module Ariel
 
     attr_accessor :candidates
     def initialize(candidates, examples)
-      @candidates=candidates.clone #Just in case a CandidateSelector function directly modifies the array, affecting the original. Shouldn't happen.
+      @candidates=candidates.dup #Just in case a CandidateSelector function directly modifies the array, affecting the original. Shouldn't happen.
       @examples=examples
     end
 
@@ -65,7 +65,7 @@ module Ariel
         rule_score=0
         matched_examples=0
         @examples.each do |example|
-          match_index = example.apply_rule(rule)
+          match_index = rule.apply_to(example)
           if match_index.nil?
             next
           else

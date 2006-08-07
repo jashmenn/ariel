@@ -1,0 +1,21 @@
+--- &id002 !ruby/object:Ariel::StructureNode 
+children: 
+  :calculation: &id001 !ruby/object:Ariel::StructureNode 
+    children: 
+      :result: !ruby/object:Ariel::StructureNode 
+        children: {}
+
+        meta: !ruby/object:OpenStruct 
+          table: 
+            :node_type: :not_list
+            :name: :result
+        parent: *id001
+    meta: !ruby/object:OpenStruct 
+      table: 
+        :node_type: :not_list
+        :name: :calculation
+    parent: *id002
+meta: !ruby/object:OpenStruct 
+  table: 
+    :node_type: :not_list
+    :name: :root

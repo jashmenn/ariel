@@ -11,20 +11,8 @@ module Ariel
       string = file.respond_to?(:read) ? file.read : file
       tokenstream = TokenStream.new
       tokenstream.tokenize(string, true)
-      root = ExtractedNode.new(tokenstream, :name=>:root, :structure=>structure)
-      structure.each_descendant(true) do |structure_node|
-        structure_node.meta.start_rule= Proc.new do |t_stream, s_node| 
-          t_stream.rewind
-          LabelUtils.skip_to_label_tag(t_stream, s_node, :open)
-        end
-        structure_node.meta.end_rule= Proc.new do |t_stream, s_node|
-          t_stream.rewind
-          result = LabelUtils.skip_to_label_tag(t_stream.reverse!, s_node, :closed)
-          t_stream.reverse!
-          (t_stream.size-(result + 1))
-        end
-      end
-      structure.apply_extraction_tree_on root
+      root = ExtractedNode.new(:root, tokenstream, structure)
+      structure.apply_extraction_tree_on(root, true)
       root.each_descendant(true) do |extracted_node|
         if extracted_node.parent
           loaded_example_hash[extracted_node.meta.structure] << extracted_node
@@ -47,9 +35,10 @@ module Ariel
           end_examples << end_tstream
         end
         learner = Learner.new(*start_examples)
-        structure_node.meta.start_rule = learner.learn_rule
+        start_rules = learner.learn_rule :forward
         learner = Learner.new(*end_examples)
-        structure_node.meta.end_rule = learner.learn_rule
+        end_rules = learner.learn_rule :back
+        structure_node.ruleset=RuleSet.new(start_rules, end_rules)
       end
     end
 
@@ -58,11 +47,11 @@ module Ariel
       Dir.glob("#{dir}/*") do |doc|
         next if doc=~ /structure\.rb\z/
         File.open(doc) do |file|
-          self.load_labeled_example(file, root, loaded_example_hash)
+          self.load_labeled_example(file, structure, loaded_example_hash)
         end
       end
-      self.supervise_learning root, loaded_example_hash
-      return root
+      self.supervise_learning structure, loaded_example_hash
+      return structure
     end
 
 

@@ -10,15 +10,22 @@ require 'candidate_selector'
 require 'label_utils'
 require 'example_document_loader'
 
-require 'breakpoint'
-require 'logger'
-DEBUGLOG = Logger.new(File.open('debug.log', 'w'))
-DEBUGLOG.datetime_format = " \010"
-DEBUGLOG.progname = "\010\010\010"
+#$DEBUG=true
+if $DEBUG
+  require 'breakpoint'
+  require 'logger'
 
-def debug(message)
-#    p message
-  DEBUGLOG.debug message
+  DEBUGLOG = Logger.new(File.open('debug.log', 'wb'))
+  DEBUGLOG.datetime_format = " \010"
+  DEBUGLOG.progname = "\010\010\010"
+
+  def debug(message)
+     p message
+    #DEBUGLOG.debug message
+  end
+else
+  def debug(message)
+  end
 end
 
 # = Ariel - A Ruby Information Extraction Library

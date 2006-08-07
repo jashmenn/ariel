@@ -4,14 +4,12 @@ module Ariel
   # Implements a Node object used to represent the structure of the document
   # tree. Each node stores start and end rules to extract the desired content
   # from its parent node. Could be viewed as a rule-storing object.
-  class StructureNode < OpenStruct
+  class StructureNode
     include NodeLike
-    def initialize (type=:not_list, meta_hash=nil, &block)
-      super()
-      @children=[]
-      @meta = OpenStruct.new(meta_hash)
-      @meta.node_type = type
-      @meta.extracted_nodes=[]
+    attr_accessor :ruleset
+    def initialize(name=:root, type=:not_list, &block)
+      @children={}
+      @meta = OpenStruct.new({:name=>name, :node_type=>type})
       yield self if block_given?
     end
 
@@ -29,49 +27,49 @@ module Ariel
     # the list is extracted and so are each of the list items. In this case,
     # only the list items are yielded.
     def extract_from(node)
-      if @meta.start_rule.kind_of? Proc
-        start_token_pos=@meta.start_rule.call(node.tokenstream, self)
-        debug "start_token_pos=#{start_token_pos}"
-      else
-        start_token_pos = node.tokenstream.apply_rule(@meta.start_rule)
-      end
-      if @meta.end_rule.kind_of? Proc
-        end_token_pos = @meta.end_rule.call(node.tokenstream, self)
-        debug "end_token_pos=#{end_token_pos}"
-      else
-        end_token_pos=node.tokenstream.apply_rule(@meta.end_rule)
-      end
-      return false if (start_token_pos.nil? or end_token_pos.nil?) #Extraction failed, should an empty node be added anyway?
-      newstream = node.tokenstream.slice_by_token_index(start_token_pos, end_token_pos)
-      extracted_node = ExtractedNode.new(newstream, :name=>meta.name, :structure=>self)
-      node.add_child extracted_node, meta.name
-      yield extracted_node if block_given? and meta.node_type != :list
-      @meta.extracted_nodes << extracted_node
-
+      # Will be reimplemented to return an array of extracted items
+      newstream = @ruleset.apply_to(node.tokenstream)
+      extracted_node = ExtractedNode.new(meta.name, newstream, self)
+      node.add_child extracted_node
+      
       if self.meta.node_type == :list
-        #do list stuff
+        #Do stuff
       end
-    
+      return extracted_node
     end
 
     # Applies the extraction rules stored in the current StructureNode and all its
     # descendant children.
-    def apply_extraction_tree_on(root_node)
+    def apply_extraction_tree_on(root_node, extract_labels=false)
       extraction_queue = [root_node]
       until extraction_queue.empty? do
         new_parent = extraction_queue.shift
-        new_parent.meta.structure.children.each do |child|
-          child.extract_from(new_parent) {|node| extraction_queue.push node} #extract_from returns only those nodes that need further examination
+        new_parent.meta.structure.children.values.each do |child|
+          if extract_labels
+            extracted_node=LabelUtils.extract_label(child, new_parent)
+          else
+            extracted_node=child.extract_from(new_parent)
+          end
+          extraction_queue.push(extracted_node)
         end
       end
       return root_node
     end
 
-    def method_missing(method, &block)
-      if method.to_s.match(/_list\z/)
-        self.add_child(StructureNode.new(:list, &block), method)
+    def item(name, &block)
+      self.add_child(StructureNode.new(name, &block))
+    end
+
+    def list_item(name, &block)
+      self.add_child(StructureNode.new(name, :list, &block))
+    end
+
+
+    def method_missing(method, *args, &block)
+      if @children.has_key? method
+        @children[method]
       else
-        self.add_child(StructureNode.new(&block), method)
+        super
       end
     end
   end

@@ -10,11 +10,13 @@ module Ariel
   # then consumed. A TokenStream also provides methods for finding patterns in a
   # given stream much like StringScanner but for an array of tokens. For rule
   # generation, a certain token can be marked as being the start point of a label.
+  # Finally, a TokenStream will record whether it is in a reversed or unreversed
+  # state so that when rules are applied, they are always applied from the front
+  # or end of the stream as required, whether it is reversed or not.
   class TokenStream
     include Enumerable
     attr_accessor :tokens, :cur_pos, :label_index, :original_text
     
-
     def initialize()
       @tokens=[]
       @cur_pos=0
@@ -26,6 +28,7 @@ module Ariel
       /\S/ # Grab any characters left over that aren't whitespace
       ]
       @label_tag_regexen = [LabelUtils.any_label_regex]
+      @reversed=false
     end
 
     # The tokenizer operates on a string by splitting it at every point it
@@ -138,6 +141,7 @@ module Ariel
     # Return to the beginning of the TokenStream.
     def rewind
       @cur_pos=0
+      self
     end
 
     # Returns a copy of the current instance with a reversed set of tokens. If
@@ -147,11 +151,25 @@ module Ariel
       self.deep_clone.reverse!
     end
 
+    # Converts the given position so it points to the same token once the stream
+    # is reversed. Result invalid for when @tokens.size==0
+    def reverse_pos(pos)
+      @tokens.size-(pos + 1)
+    end
+
     # Same as LabeledStream#reverse, but changes are made in place.
     def reverse!
       @tokens.reverse!
-      @label_index = (self.size-(@label_index + 1)) unless @label_index.nil?
+      @label_index = reverse_pos(@label_index) unless @label_index.nil?
+      @cur_pos = reverse_pos(@cur_pos)
+      @reversed=!@reversed
       return self
+    end
+
+    # Returns true or false depending on whether the given tokenstream is in a
+    # reversed state
+    def reversed?
+      @reversed
     end
     
     # Takes a list of Strings and Symbols as its arguments representing text to be matched in
@@ -182,28 +200,10 @@ module Ariel
       @tokens[@cur_pos]
     end
 
-    # Will attempt to apply a Rule object, asking it for the direction in which
-    # it should be applied (:forward or :back).
-    # The TokenStream's original position is not remembered.
-    # Returns the stream's new position if the rule matches, and nil if it fails.
-    def apply_rule(rule)
-      self.rewind #rules are applied from the beginning of the stream
-      return cur_pos if rule.nil?
-      self.reverse! if rule.direction == :back
-      rule.landmarks.each do |landmark|
-        unless skip_to(*landmark)
-          self.reverse! if rule.direction == :back #Failed, fix the stream.
-          return nil
-        end
-      end
-      if rule.direction == :back
-        self.reverse!
-        @cur_pos = @tokens.size-(@cur_pos + 1)
-      end
-      return @cur_pos
-    end
-
     private
+
+    # Uses split_by_regex to split each member of a given array of string and
+    # offset pairs in to new arrays of string and offset pairs.
     def split_string_array_by_regex(string_array, regex, add_matches=true)
       new_string_array = []
       string_array.each do |arr| 

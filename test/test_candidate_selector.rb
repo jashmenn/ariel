@@ -8,10 +8,10 @@ class TestCandidateSelector < Ariel::TestCase
     # Must get rid of this repetition, should be available to all tests
     @e=@@labeled_addresses
     @candidates=[]
-    @candidates << Ariel::Rule.new([:anything])
-    @candidates << Ariel::Rule.new([:numeric], [:numeric], [:numeric])
-    @candidates << Ariel::Rule.new(["("])
-    @candidates << Ariel::Rule.new([:numeric, :alpha_numeric])
+    @candidates << Ariel::Rule.new(:forward, [[:anything]])
+    @candidates << Ariel::Rule.new(:forward, [[:numeric], [:numeric], [:numeric]])
+    @candidates << Ariel::Rule.new(:forward, [["("]])
+    @candidates << Ariel::Rule.new(:forward, [[:numeric, :alpha_numeric]])
     @selector=Ariel::CandidateSelector.new(@candidates, @e)
   end
 
