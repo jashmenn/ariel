@@ -27,6 +27,7 @@ module Ariel
     # are then removed and the process is repeated considering all examples that
     # remain. Returns an array of the rules found (in order).
     def learn_rule(direction)
+      debug "Searching for a #{direction} rule"
       @direction=direction
       @current_rule=Rule.new(direction)
       combined_rules=[]
@@ -57,10 +58,15 @@ module Ariel
     # labeled token is considered, and separate rules are generated that skip_to that
     # token's text or any of it's matching wildcards.
     def generate_initial_candidates
-      end_token=current_seed.tokens[current_seed.label_index-1]
-      @candidates<< Rule.new(@direction, [[end_token.text]])
-      @candidates.concat(@candidates[0].generalise_feature(0))
-      debug "Initial candidates: #{@candidates.inspect} created"
+      if current_seed.label_index==0
+        @candidates << Rule.new(@direction)
+      else
+        end_token=current_seed.tokens[current_seed.label_index-1]
+        debug "Creating initial candidates based on #{end_token.text}"
+        @candidates<< Rule.new(@direction, [[end_token.text]])
+        @candidates.concat(@candidates[0].generalise_feature(0))
+        debug "Initial candidates: #{@candidates.inspect} created"
+      end
       return @candidates.size
     end
 
@@ -73,27 +79,33 @@ module Ariel
         best_refiner = get_best_refiner
         best_solution = get_best_solution
         @current_rule = best_refiner
-        break unless is_not_perfect(best_solution)
+        break if perfect?(best_solution)
         refine
       end
 #     return post_process(best_solution)
-      debug "Rule found: #{best_solution.inspect} that matches "
+      debug "Rule found: #{best_solution.inspect}"
       return best_solution
     end
 
-    # A given rule is_not_perfect if it doesn't split the examples by perfectly
-    # matching some, and failing to match all of the rest.
-    def is_not_perfect(rule)
+    # A given rule is perfect if it successfully matches the label on at least
+    # one example and fails all others.
+    def perfect?(rule)
       perfect_count=0
       fail_count=0
       @examples.each do |example|
-        perfect_count+=1 if rule.matches(example, :perfect)
-        fail_count+=1 if rule.matches(example, :fail)
+        if rule.matches(example, :perfect)
+          perfect_count+=1
+          debug "#{rule.inspect} matches #{example.text} perfectly"
+        elsif rule.matches(example, :fail) 
+          fail_count+=1
+          debug "#{rule.inspect} fails to match #{example.text}"
+        end
       end
       if (perfect_count >= 1) && (fail_count == (@examples.size - perfect_count))
-        return false
-      else
         return true
+      else
+        debug "Rule was not perfect, perfect_count=#{perfect_count}, fail_count=#{fail_count}"
+        return false
       end
     end
 
@@ -173,6 +185,7 @@ module Ariel
       refined_rules=[]
       width = landmark.size
       while current_seed.skip_to(*landmark) #Probably should stop when cur_pos > label_index
+        break if current_seed.cur_pos > current_seed.label_index
         match_start = (current_seed.cur_pos - 1) - width #pos of first matched token
         match_end = current_seed.cur_pos - 1 #pos of last matched token
         preceding_token = current_seed.tokens[match_start-1]
@@ -214,6 +227,7 @@ module Ariel
           topology_refs << r
           topology_refs.concat r.generalise_feature(index+1)
       end
+    debug "Topology refinements before uniq! #{topology_refs.size}"
     topology_refs.uniq!
     @candidates.concat topology_refs
     debug "#{topology_refs.size} topology refinements generated"

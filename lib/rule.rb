@@ -18,9 +18,15 @@ module Ariel
       @direction=direction
     end
 
-    # Two rules are equal if they have the same list of landmarks
+    # Two rules are equal if they have the same list of landmarks and the same
+    # direction
     def ==(rule)
-      return (self.landmarks == rule.landmarks)
+      return ((self.landmarks == rule.landmarks) && self.direction==rule.direction)
+    end
+    alias :eql? :==
+
+    def hash
+      [@landmarks, @direction].hash
     end
 
     # Returns a rule that contains a given range of 
@@ -74,6 +80,9 @@ module Ariel
         end
       end
       token_loc=target.cur_pos
+      if @direction==:back && !tokenstream.reversed?
+        token_loc = tokenstream.reverse_pos(token_loc) #Return position from left of given stream
+      end
       md = @@RuleMatchData.new(token_loc)
       if target.label_index
         idx = target.label_index

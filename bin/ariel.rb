@@ -45,6 +45,11 @@ when "extract"
     tokenstream.tokenize File.read(file)
     root_node=Ariel::ExtractedNode.new :root, tokenstream, learnt_structure
     learnt_structure.apply_extraction_tree_on root_node
-    puts root_node.to_yaml
+    puts "Results for #{file}:"
+    root_node.each_descendant do |node|
+      puts "#{node.meta.name}: #{node.tokenstream.text}"
+    end
+    puts
+   # puts root_node.to_yaml
   end
 end

@@ -8,7 +8,6 @@ module Ariel
     attr_accessor :tokenstream
 
     def initialize(name, tokenstream, structure)
-      super()
       @children={}
       @meta = OpenStruct.new({:name=>name, :structure=>structure})
       @tokenstream=tokenstream

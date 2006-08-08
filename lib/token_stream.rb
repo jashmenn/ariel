@@ -22,7 +22,7 @@ module Ariel
       @cur_pos=0
       @original_text = ""
       @token_regexen = [
-      /<\/?\w+>/, # Match html tags that don't have attributes
+      Wildcards.list[:html_tag], # Match html tags that don't have attributes
       /\d+/, # Match any numbers, probably good to make a split
       /\b\w+\b/, # Pick up words, will split at punctuation
       /\S/ # Grab any characters left over that aren't whitespace
@@ -124,6 +124,9 @@ module Ariel
     # filtered (TokenStream#remove_label_tags).
     def raw_text(l_index=0, r_index=-1)
       return "" if @tokens.size==0
+      if reversed?
+        l_index, r_index = r_index, l_index
+      end
       @original_text[@tokens[l_index].start_loc...@tokens[r_index].end_loc]
     end
     
@@ -160,7 +163,9 @@ module Ariel
     # Same as LabeledStream#reverse, but changes are made in place.
     def reverse!
       @tokens.reverse!
-      @label_index = reverse_pos(@label_index) unless @label_index.nil?
+      if label_index
+        @label_index = reverse_pos(@label_index)
+      end
       @cur_pos = reverse_pos(@cur_pos)
       @reversed=!@reversed
       return self

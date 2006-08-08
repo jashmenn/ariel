@@ -81,7 +81,7 @@ module Ariel
 
     def select_with_longer_end_landmarks
       debug "Selecting rules that have longer end landmarks"
-      @candidates = highest_scoring_by {|rule| rule.landmarks.last.size}
+      @candidates = highest_scoring_by {|rule| rule.landmarks.last.size unless rule.landmarks.last.nil?}
     end
 
     # Returns a random candidate. Meant for making the final choice in case

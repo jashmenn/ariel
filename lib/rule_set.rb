@@ -11,7 +11,6 @@ module Ariel
     end
 
     def apply_to(tokenstream)
-      tokenstream=extracted_node.tokenstream
       start_idx=nil
       end_idx=nil
       @start_rules.each do |rule|
@@ -23,9 +22,11 @@ module Ariel
         break if end_idx
       end
       if start_idx && end_idx
+        debug "RuleSet matched with start_idx=#{start_idx} and end_idx=#{end_idx}"
         return nil if end_idx < start_idx
         return tokenstream.slice_by_token_index(start_idx, end_idx)
       else
+        debug "No valid match was found"
         return nil
       end
     end

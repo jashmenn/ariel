@@ -10,11 +10,36 @@ children:
             :node_type: :not_list
             :name: :result
         parent: *id001
+        ruleset: !ruby/object:Ariel::RuleSet 
+          end_rules: 
+          - !ruby/object:Ariel::Rule 
+            direction: :back
+            landmarks: []
+
+          start_rules: 
+          - !ruby/object:Ariel::Rule 
+            direction: :forward
+            landmarks: 
+            - - "="
     meta: !ruby/object:OpenStruct 
       table: 
         :node_type: :not_list
         :name: :calculation
     parent: *id002
+    ruleset: !ruby/object:Ariel::RuleSet 
+      end_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :back
+        landmarks: 
+        - - </b>
+        - - </b>
+      start_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :forward
+        landmarks: 
+        - - <b>
+        - - gif
+        - - <b>
 meta: !ruby/object:OpenStruct 
   table: 
     :node_type: :not_list

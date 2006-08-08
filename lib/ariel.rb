@@ -9,8 +9,8 @@ require 'wildcards'
 require 'candidate_selector'
 require 'label_utils'
 require 'example_document_loader'
+require 'rule_set'
 
-#$DEBUG=true
 if $DEBUG
   require 'breakpoint'
   require 'logger'

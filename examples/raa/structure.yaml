@@ -1,0 +1,183 @@
+--- &id001 !ruby/object:Ariel::StructureNode 
+children: 
+  :short_description: !ruby/object:Ariel::StructureNode 
+    children: {}
+
+    meta: !ruby/object:OpenStruct 
+      table: 
+        :node_type: :not_list
+        :name: :short_description
+    parent: *id001
+    ruleset: !ruby/object:Ariel::RuleSet 
+      end_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :back
+        landmarks: 
+        - - </td>
+        - - Category
+        - - </td>
+      start_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :forward
+        landmarks: 
+        - - <td>
+  :current_version: !ruby/object:Ariel::StructureNode 
+    children: {}
+
+    meta: !ruby/object:OpenStruct 
+      table: 
+        :node_type: :not_list
+        :name: :current_version
+    parent: *id001
+    ruleset: !ruby/object:Ariel::RuleSet 
+      end_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :back
+        landmarks: 
+        - - </p>
+        - - table
+        - - </p>
+      start_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :forward
+        landmarks: 
+        - - /
+        - - caption
+        - - /
+  :category: !ruby/object:Ariel::StructureNode 
+    children: {}
+
+    meta: !ruby/object:OpenStruct 
+      table: 
+        :node_type: :not_list
+        :name: :category
+    parent: *id001
+    ruleset: !ruby/object:Ariel::RuleSet 
+      end_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :back
+        landmarks: 
+        - - </td>
+        - - Status
+        - - </td>
+      start_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :forward
+        landmarks: 
+        - - <td>
+        - - <td>
+  :homepage: !ruby/object:Ariel::StructureNode 
+    children: {}
+
+    meta: !ruby/object:OpenStruct 
+      table: 
+        :node_type: :not_list
+        :name: :homepage
+    parent: *id001
+    ruleset: !ruby/object:Ariel::RuleSet 
+      end_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :back
+        landmarks: 
+        - - </a>
+        - - Download
+        - - </a>
+      start_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :forward
+        landmarks: 
+        - - ">"
+        - - rubyforge
+        - - ">"
+  :owner: !ruby/object:Ariel::StructureNode 
+    children: {}
+
+    meta: !ruby/object:OpenStruct 
+      table: 
+        :node_type: :not_list
+        :name: :owner
+    parent: *id001
+    ruleset: !ruby/object:Ariel::RuleSet 
+      end_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :back
+        landmarks: 
+        - - </a>
+        - - id
+        - - </a>
+      start_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :forward
+        landmarks: 
+        - - ">"
+        - - com
+        - - ">"
+  :name: !ruby/object:Ariel::StructureNode 
+    children: {}
+
+    meta: !ruby/object:OpenStruct 
+      table: 
+        :node_type: :not_list
+        :name: :name
+    parent: *id001
+    ruleset: !ruby/object:Ariel::RuleSet 
+      end_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :back
+        landmarks: 
+        - - </title>
+      start_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :forward
+        landmarks: 
+        - - "-"
+        - - RAA
+          - "-"
+  :license: !ruby/object:Ariel::StructureNode 
+    children: {}
+
+    meta: !ruby/object:OpenStruct 
+      table: 
+        :node_type: :not_list
+        :name: :license
+    parent: *id001
+    ruleset: !ruby/object:Ariel::RuleSet 
+      end_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :back
+        landmarks: 
+        - - </td>
+        - - Dependency
+        - - </td>
+      start_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :forward
+        landmarks: 
+        - - <td>
+        - - License
+        - - <td>
+  :version_history: !ruby/object:Ariel::StructureNode 
+    children: {}
+
+    meta: !ruby/object:OpenStruct 
+      table: 
+        :node_type: :not_list
+        :name: :version_history
+    parent: *id001
+    ruleset: !ruby/object:Ariel::RuleSet 
+      end_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :back
+        landmarks: 
+        - - </td>
+      start_rules: 
+      - !ruby/object:Ariel::Rule 
+        direction: :forward
+        landmarks: 
+        - - <td>
+        - - Versions
+        - - <td>
+meta: !ruby/object:OpenStruct 
+  table: 
+    :node_type: :not_list
+    :name: :root

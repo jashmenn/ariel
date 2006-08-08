@@ -9,7 +9,7 @@ module Ariel
         :alpha=>/[[:alpha:]]+/,
         :capitalized=>/[[:upper:]]+\w+/,
         :all_caps=>/[[:upper:]]+/,
-        :html_tag=>/<\/?\w+>/,
+        :html_tag=>/<\/?\w+>|<\w+\s+\/>/,
         :punctuation=>/[[:punct:]]+/
       }
     # Returns the hash of wildcard name (symbol) and regular expression pairs.

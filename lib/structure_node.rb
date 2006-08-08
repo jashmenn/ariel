@@ -30,8 +30,7 @@ module Ariel
       # Will be reimplemented to return an array of extracted items
       newstream = @ruleset.apply_to(node.tokenstream)
       extracted_node = ExtractedNode.new(meta.name, newstream, self)
-      node.add_child extracted_node
-      
+      node.add_child extracted_node if newstream
       if self.meta.node_type == :list
         #Do stuff
       end
@@ -46,11 +45,11 @@ module Ariel
         new_parent = extraction_queue.shift
         new_parent.meta.structure.children.values.each do |child|
           if extract_labels
-            extracted_node=LabelUtils.extract_label(child, new_parent)
+            extracted_node=LabelUtils.extract_labeled_region(child, new_parent)
           else
             extracted_node=child.extract_from(new_parent)
           end
-          extraction_queue.push(extracted_node)
+          extraction_queue.push(extracted_node) if extracted_node
         end
       end
       return root_node
@@ -63,7 +62,6 @@ module Ariel
     def list_item(name, &block)
       self.add_child(StructureNode.new(name, :list, &block))
     end
-
 
     def method_missing(method, *args, &block)
       if @children.has_key? method

@@ -27,10 +27,10 @@ module Ariel
       string.gsub self.any_label_regex, ''
     end
 
-    # Extracts the label representing the given structure node from the
+    # Extracts the labeled region representing the given structure node from the
     # parent_extracted_node. A new ExtractedNode is returned to be added as a
     # child to the parent_extracted_node. Used when loading labeled documents.
-    def self.extract_label(structure, parent_extracted_node)
+    def self.extract_labeled_region(structure, parent_extracted_node)
       tokenstream=parent_extracted_node.tokenstream
       start_idx=self.skip_to_label_tag(tokenstream, structure.meta.name, :open)
       end_idx=self.skip_to_label_tag(tokenstream.reverse, structure.meta.name, :closed)
@@ -41,7 +41,7 @@ module Ariel
       return child_node
     end
 
-
+    private
     # Locates a given label tag in a tokenstream
     def self.skip_to_label_tag(tokenstream, name, type)
       case type
