@@ -52,7 +52,6 @@ module Ariel
       end
       tokenstream.rewind
       regex = self.label_regex(name.to_s)[re_index]
-      p regex
       debug "Seeking #{name.to_s} of type #{type}"
       nesting_level=0
       tokenstream.each do |token|

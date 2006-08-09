@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-require 'ariel'
 require 'optparse'
 require 'yaml'
 
@@ -9,28 +8,30 @@ options = {}
 OptionParser.new do |opts|
   opts.banner = "Usage: #$0 [mode] [options]"
 
-  opts.on('-m', '--mode=mode') do |mode|
+  opts.on('-m', '--mode=learn|extract') do |mode|
     raise OptionParser::InvalidArgument unless (mode=="extract" or mode=="learn")
     options[:mode]=mode
   end
 
-  opts.on('-s', '--src-dir=DIRECTORY', 'Source directory') do |src_dir|
-    options[:src_dir]=src_dir 
-  end
-
-  opts.on('-d', '--dir=DIRECTORY', 'Destination directory') do |dir|
+  opts.on('-d', '--dir=DIRECTORY', 'Directory to look for documents to operate on.') do |dir|
     options[:dir]=dir
   end
 
-  opts.on('-S', '--structure=STRUCTURE', 'YAML file in which the structure is defined') do |structure|
+  opts.on('-D', '--debug', 'Directory to look for documents to operate on.') do 
+    $DEBUG=true
+  end
+
+  opts.on('-s', '--structure=STRUCTURE', 'YAML file in which the structure is defined') do |structure|
     options[:structure]=structure
   end
 end.parse!
 
+require 'ariel' #After option parsing to debug setting can take effect
+
 case options[:mode]
 when "learn"
   structure=YAML.load_file options[:structure]
-  learnt_structure=Ariel::ExampleDocumentLoader.load_directory options[:src_dir], structure
+  learnt_structure=Ariel::ExampleDocumentLoader.load_directory options[:dir], structure
   File.open(options[:structure], 'wb') do |file|
     YAML.dump(learnt_structure, file)
   end
@@ -40,7 +41,7 @@ when "learn"
   end
 when "extract"
   learnt_structure=YAML.load_file options[:structure]
-  Dir.glob("#{options[:src_dir]}/*") do |file|
+  Dir.glob("#{options[:dir]}/*") do |file|
     tokenstream=Ariel::TokenStream.new
     tokenstream.tokenize File.read(file)
     root_node=Ariel::ExtractedNode.new :root, tokenstream, learnt_structure

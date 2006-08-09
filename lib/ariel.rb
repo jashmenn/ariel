@@ -12,12 +12,11 @@ require 'ariel/example_document_loader'
 require 'ariel/rule_set'
 
 if $DEBUG
-  require 'breakpoint'
-  require 'logger'
+#  require 'logger'
 
-  DEBUGLOG = Logger.new(File.open('debug.log', 'wb'))
-  DEBUGLOG.datetime_format = " \010"
-  DEBUGLOG.progname = "\010\010\010"
+#  DEBUGLOG = Logger.new(File.open('debug.log', 'wb'))
+#  DEBUGLOG.datetime_format = " \010"
+#  DEBUGLOG.progname = "\010\010\010"
 
   def debug(message)
      p message
@@ -40,7 +39,7 @@ end
 #
 # When working with Ariel, your workflow might look something like this:
 # 1. Define a structure for the data you wish to extract. For example:
-#    
+#
 #     @structure = Ariel::StructureNode.new do |r|
 #       r.article do |a|
 #         a.title
