@@ -1,15 +1,15 @@
+require 'ariel/node'
+
 module Ariel
-  require 'ostruct'
 
   # Each ExtractedNode has a name, a tokenstream and a structure which points to
   # the relevant StructureNode.
-  class ExtractedNode
-    include NodeLike
-    attr_accessor :tokenstream
+  class Node::Extracted < Node
+    attr_accessor :tokenstream, :structure_node
 
     def initialize(name, tokenstream, structure)
-      @children={}
-      @meta = OpenStruct.new({:name=>name, :structure=>structure})
+      super(name)
+      @structure_node=structure
       @tokenstream=tokenstream
     end
 

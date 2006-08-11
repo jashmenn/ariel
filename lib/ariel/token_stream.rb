@@ -29,6 +29,7 @@ module Ariel
       ]
       @label_tag_regexen = [LabelUtils.any_label_regex]
       @reversed=false
+      @contains_label_tags=false
     end
 
     # The tokenizer operates on a string by splitting it at every point it
@@ -45,14 +46,18 @@ module Ariel
     # tokenizer will first remove and discard any occurences of label_tags (as
     # defined by the Regex set in LabelUtils) before matching and adding tokens.
     # Any label_tag tokens will be marked as such upon creation.
-    def tokenize(input, contains_labels=false)
+    def tokenize(input, contains_label_tags=false)
       string_array=[[input, 0]]
       @original_text = input
-      @original_text_contains_labels=contains_labels
-      @label_tag_regexen.each {|regex| split_string_array_by_regex(string_array, regex, false)} if contains_labels
+      @contains_label_tags=contains_label_tags
+      @label_tag_regexen.each {|regex| split_string_array_by_regex(string_array, regex, false)} if contains_label_tags
       @token_regexen.each {|regex| split_string_array_by_regex(string_array, regex)}
       @tokens.sort!
       @tokens.size
+    end
+
+    def contains_label_tags?
+      @contains_label_tags
     end
 
     # Goes through all stored Token instances, removing them if
@@ -111,7 +116,7 @@ module Ariel
     # examples). See also TokenStream#raw_text
     def text(l_index=0, r_index=-1)
       out=raw_text(l_index, r_index)
-      if @original_text_contains_labels
+      if contains_label_tags?
         LabelUtils.clean_string(out)
       else
         out

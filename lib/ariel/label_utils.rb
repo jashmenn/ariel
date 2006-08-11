@@ -28,17 +28,39 @@ module Ariel
     end
 
     # Extracts the labeled region representing the given structure node from the
-    # parent_extracted_node. A new ExtractedNode is returned to be added as a
+    # parent_extracted_node. A new Node::Extracted is returned to be added as a
     # child to the parent_extracted_node. Used when loading labeled documents.
     def self.extract_labeled_region(structure, parent_extracted_node)
       tokenstream=parent_extracted_node.tokenstream
-      start_idx=self.skip_to_label_tag(tokenstream, structure.meta.name, :open)
-      end_idx=self.skip_to_label_tag(tokenstream.reverse, structure.meta.name, :closed)
-      end_idx=tokenstream.reverse_pos end_idx
-      newstream=tokenstream.slice_by_token_index(start_idx, end_idx)
-      child_node=ExtractedNode.new(structure.meta.name, newstream, structure)
-      parent_extracted_node.add_child child_node
-      return child_node
+      start_idxs=[]
+      end_idxs=[]
+      while start_idx=self.skip_to_label_tag(tokenstream, structure.node_name, :open)
+        start_idxs << start_idx
+        break unles structure.node_type==:list
+      end
+      while end_idx=self.skip_to_label_tag(tokenstream, structure.node_name, :closed)
+        end_idxs << end_idx
+      end
+      result=[]
+      i=0
+      start_idxs.zip(end_idxs) do |start_idx, end_idx|
+        if start_idx && end_idx && (start_idx < end_idx)
+          newstream=tokenstream.slice_by_token_index(start_idx, end_idx)
+          if structure.node_type==:list
+            new_name=i
+          else
+            new_name = structure.node_name
+          end
+          child_node = Node::Extracted.new(new_name, newstream, structure)
+          result << child_node
+          parent_extracted_node.add_child child_node
+          yield child_node if block_given?
+          i+=1
+        else
+          break
+        end
+      end
+      return result
     end
 
     private
@@ -50,7 +72,6 @@ module Ariel
       when :closed
         re_index=1
       end
-      tokenstream.rewind
       regex = self.label_regex(name.to_s)[re_index]
       debug "Seeking #{name.to_s} of type #{type}"
       nesting_level=0
@@ -59,7 +80,9 @@ module Ariel
           return tokenstream.cur_pos if nesting_level==0
         end
         if token.matches?(self.label_regex[0])
-          nesting_level+=1
+          # Don't increase nesting if encounter the unnested start tag that
+          # pairs with the end tag we're searching for.
+          nesting_level+=1 unless nesting_level==0 && token.matches?(self.label_regex(name.to_s)[0])
           debug "Encountered token \"#{token.text}\", nesting level=#{nesting_level}"
         elsif token.matches?(self.label_regex[1])
           nesting_level-=1

@@ -22,13 +22,12 @@ class TestRule < Ariel::TestCase
     assert_equal 1, md.token_loc
     @late_rule.apply_to(@labeled) {|md|}
     assert_equal :late, md.type
-    assert_nil (@perfect_rule.apply_to(@unlabeled))
+    assert_equal [], (@perfect_rule.apply_to(@unlabeled))
   end
 
   def test_matches
     assert(@early_rule.matches(@labeled, :early))
     assert(@late_rule.matches(@labeled, :early, :late))
-    assert(@perfect_rule.matches(@unlabeled, :fail))
   end
 
   def test_wildcard_count

@@ -1,15 +1,16 @@
+require 'ariel/node'
+
 module Ariel
-  require 'ostruct'
 
   # Implements a Node object used to represent the structure of the document
   # tree. Each node stores start and end rules to extract the desired content
   # from its parent node. Could be viewed as a rule-storing object.
-  class StructureNode
-    include NodeLike
-    attr_accessor :ruleset
+  class Node::Structure < Node
+    attr_accessor :ruleset, :node_type
+
     def initialize(name=:root, type=:not_list, &block)
-      @children={}
-      @meta = OpenStruct.new({:name=>name, :node_type=>type})
+      super(name)
+      @node_type=type
       yield self if block_given?
     end
 
@@ -23,18 +24,22 @@ module Ariel
     end
 
     # Given a Node to apply it's rules to, this function will create a new node
-    # and add it as a child of the given node. For StructureNodes of :list type,
-    # the list is extracted and so are each of the list items. In this case,
-    # only the list items are yielded.
+    # and add it as a child of the given node. It returns an array of the items
+    # extracted by the rule
     def extract_from(node)
-      # Will be reimplemented to return an array of extracted items
-      newstream = @ruleset.apply_to(node.tokenstream)
-      extracted_node = ExtractedNode.new(meta.name, newstream, self)
-      node.add_child extracted_node if newstream
-      if self.meta.node_type == :list
-        #Do stuff
+      extractions=[]
+      i=0
+      @ruleset.apply_to(node.tokenstream) do |newstream|
+        if self.node_type==:list
+          new_node_name=i
+        else
+          new_node_name=@node_name
+        end
+        extracted_node = Node::Extracted.new(new_node_name, newstream, self)
+        node.add_child extracted_node
+        extractions << extracted_node
       end
-      return extracted_node
+      return extractions
     end
 
     # Applies the extraction rules stored in the current StructureNode and all its
@@ -45,30 +50,22 @@ module Ariel
         new_parent = extraction_queue.shift
         new_parent.meta.structure.children.values.each do |child|
           if extract_labels
-            extracted_node=LabelUtils.extract_labeled_region(child, new_parent)
+            extractions=LabelUtils.extract_labeled_region(child, new_parent)
           else
-            extracted_node=child.extract_from(new_parent)
+            extractions=child.extract_from(new_parent)
           end
-          extraction_queue.push(extracted_node) if extracted_node
+          extractions.each {|extracted_node| extraction_queue.push extracted_node}
         end
       end
       return root_node
     end
 
     def item(name, &block)
-      self.add_child(StructureNode.new(name, &block))
+      self.add_child(Node::Structure.new(name, &block))
     end
 
     def list_item(name, &block)
-      self.add_child(StructureNode.new(name, :list, &block))
-    end
-
-    def method_missing(method, *args, &block)
-      if @children.has_key? method
-        @children[method]
-      else
-        super
-      end
+      self.add_child(Node::Structure.new(name, :list, &block))
     end
   end
 end

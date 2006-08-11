@@ -1,7 +1,7 @@
 require 'ariel'
 require 'yaml'
 
-structure = Ariel::StructureNode.new do |r|
+structure = Ariel::Node::Structure.new do |r|
   r.item :calculation do |c|
     c.item :result
   end

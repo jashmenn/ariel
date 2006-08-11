@@ -44,7 +44,7 @@ when "extract"
   Dir.glob("#{options[:dir]}/*") do |file|
     tokenstream=Ariel::TokenStream.new
     tokenstream.tokenize File.read(file)
-    root_node=Ariel::ExtractedNode.new :root, tokenstream, learnt_structure
+    root_node=Ariel::Node::Extracted.new :root, tokenstream, learnt_structure
     learnt_structure.apply_extraction_tree_on root_node
     puts "Results for #{file}:"
     root_node.each_descendant do |node|

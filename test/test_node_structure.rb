@@ -3,7 +3,7 @@ require 'ariel_test_case'
 
 class TestStructureNode < Ariel::TestCase
   def setup
-    @tree=Ariel::StructureNode.new do |r|
+    @tree=Ariel::Node::Structure.new do |r|
       r.item :item_info do |i|
         i.item :title
         i.item :price
@@ -12,10 +12,10 @@ class TestStructureNode < Ariel::TestCase
     end
   end
   def test_unnested
-    t=Ariel::StructureNode.new {|r| r.item :picture; r.item :title; r.item :description; r.item :url}
+    t=Ariel::Node::Structure.new {|r| r.item :picture; r.item :title; r.item :description; r.item :url}
     assert t
-    assert_equal Ariel::StructureNode, t.picture.class
-    assert_equal :root, t.meta.name
+    assert_equal Ariel::Node::Structure, t.picture.class
+    assert_equal :root, t.node_name
   end
 
   def test_nested
@@ -23,7 +23,7 @@ class TestStructureNode < Ariel::TestCase
   end
 
   def test_nested_with_list
-    doc_tree=Ariel::StructureNode.new do |r|
+    doc_tree=Ariel::Node::Structure.new do |r|
       r.item :restaurant_list do |r|
         r.list_item :restaurant do |r|
           r.item :name
@@ -37,7 +37,7 @@ class TestStructureNode < Ariel::TestCase
       end
     end
     assert doc_tree
-    assert_equal :list, doc_tree.restaurant_list.restaurant.meta.node_type
+    assert_equal :list, doc_tree.restaurant_list.restaurant.node_type
   end
 
   def test_extend_structure

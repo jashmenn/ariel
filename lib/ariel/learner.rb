@@ -121,14 +121,14 @@ module Ariel
     #   document structure.
     # * longer end landmarks - prefer "local context" landmarks.
     def get_best_refiner
-      selector = CandidateSelector.new(@candidates, @examples)
-      selector.select_best_by_match_type :early, :perfect #Discriminate on coverage
-      selector.select_best_by_match_type :early
-      selector.select_best_by_match_type :fail
-      selector.select_with_fewer_wildcards
-      selector.select_closest_to_label
-      selector.select_with_longer_end_landmarks
-      best_refiner = selector.random_from_remaining #just pick a random one for now if still multiple
+      r = CandidateRefiner.new(@candidates, @examples)
+      r.refine_by_match_type :early, :perfect #Discriminate on coverage
+      r.refine_by_match_type :early
+      r.refine_by_match_type :fail
+      r.refine_by_fewer_wildcards
+      r.refine_by_label_proximity
+      r.refine_by_longer_end_landmarks
+      best_refiner = r.random_from_remaining #just pick a random one for now if still multiple
       debug "best_refiner found => #{best_refiner.inspect}"
       return best_refiner
     end
@@ -141,13 +141,13 @@ module Ariel
     # * longer end landmarks
     # * shorter unconsumed prefixes
     def get_best_solution
-      selector = CandidateSelector.new(@candidates, @examples)
-      selector.select_best_by_match_type :perfect
-      selector.select_best_by_match_type :fail
-      selector.select_with_fewer_wildcards
-      selector.select_closest_to_label
-      selector.select_with_longer_end_landmarks
-      best_solution = selector.random_from_remaining
+      r = CandidateRefiner.new(@candidates, @examples)
+      r.refine_by_match_type :perfect
+      r.refine_by_match_type :fail
+      r.refine_by_fewer_wildcards
+      r.refine_by_label_proximity
+      r.refine_by_longer_end_landmarks
+      best_solution = r.random_from_remaining
       debug "best_solution found => #{best_solution.inspect}"
       return best_solution
     end    
@@ -180,7 +180,7 @@ module Ariel
     #   alternative landmark extensions that use relevant wildcards.
     def lengthen_landmark(landmark, index)
       current_seed.rewind #In case apply_rule isn't called as index=0
-      result = @current_rule.partial(0..(index-1)).apply_to current_seed if index > 0 #Don't care about already matched tokens
+      result = @current_rule.partial(0..(index-1)).closest_match current_seed if index > 0 #Don't care about already matched tokens
       return 0 unless result # Rule doesn't match, no point refining
       refined_rules=[]
       width = landmark.size
@@ -219,7 +219,7 @@ module Ariel
     #   is also done for each of that token's matching wildcards.
     def add_new_landmarks(landmark, index)
       topology_refs=[]
-      start_pos = current_rule.partial(0..index).apply_to(current_seed)
+      start_pos = current_rule.partial(0..index).closest_match(current_seed, :early)
       end_pos = current_seed.label_index #No point adding tokens that occur after the label_index
       current_seed.tokens[start_pos...end_pos].each do |token|
           r=current_rule.deep_clone

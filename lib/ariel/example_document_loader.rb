@@ -1,6 +1,6 @@
 module Ariel
   
-  # Provides methods that read an example document, using a StructureNode tree
+  # Provides methods that read an example document, using a Node::Structure tree
   # to populate a tree of Nodes with each labeled example.
   # TODO: Fix the UTF issues this implementation is bound to create. 
   class ExampleDocumentLoader
@@ -11,11 +11,11 @@ module Ariel
       string = file.respond_to?(:read) ? file.read : file
       tokenstream = TokenStream.new
       tokenstream.tokenize(string, true)
-      root = ExtractedNode.new(:root, tokenstream, structure)
+      root = Node::Extracted.new(:root, tokenstream, structure)
       structure.apply_extraction_tree_on(root, true)
       root.each_descendant(true) do |extracted_node|
         if extracted_node.parent
-          loaded_example_hash[extracted_node.meta.structure] << extracted_node
+          loaded_example_hash[extracted_node.structure_node] << extracted_node
         end
         extracted_node.tokenstream.remove_label_tags
       end

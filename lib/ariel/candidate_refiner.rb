@@ -1,13 +1,13 @@
 module Ariel
   
   # Given an array of candidate Rules, and an array of LabeledStreams,
-  # allows heuristics to be applied to select the ideal Rule. All select_* instance
+  # allows heuristics to be applied to select the ideal Rule. All refine_* instance
   # methods will remove candidates from the internal candidates array.
-  class CandidateSelector
+  class CandidateRefiner
 
     attr_accessor :candidates
     def initialize(candidates, examples)
-      @candidates=candidates.dup #Just in case a CandidateSelector function directly modifies the array, affecting the original. Shouldn't happen.
+      @candidates=candidates.dup #Just in case we directly modify the array. Shouldn't happen.
       @examples=examples
     end
 
@@ -15,8 +15,8 @@ module Ariel
     # against the given examples. e.g. select_best_by_match_type(:early, :perfect)
     # will select the rules that have the most matches that are early or
     # perfect.
-    def select_best_by_match_type(*match_types)
-      debug "Selecting best by match types #{match_types}"
+    def refine_by_match_type(*match_types)
+      debug "Refining by match types #{match_types.inspect}"
       return @candidates if @candidates.size==1
       @candidates = highest_scoring_by do |rule|
         rule_score=0
@@ -28,6 +28,45 @@ module Ariel
       return @candidates
     end
 
+    def refine_by_fewer_wildcards
+      debug "Refining to the rules with the fewest wildcards"
+      @candidates = highest_scoring_by {|rule| -rule.wildcard_count} #hack or not?
+      return @candidates
+    end
+
+    def refine_by_label_proximity
+      debug "Selecting rules that match the examples closest to the label"
+      @candidates = highest_scoring_by do |rule|
+        rule_score=0
+        matched_examples=0
+        @examples.each do |example|
+          match_index = rule.closest_match(example)
+          if match_index.nil?
+            next
+          else
+            rule_score+= (example.label_index - match_index).abs
+            matched_examples+=1
+          end
+        end
+        rule_score = rule_score.to_f/matched_examples unless matched_examples==0 #mean distance from label_index
+        -rule_score #So highest scoring = closest to label index.
+      end
+      return @candidates
+    end
+
+    def refine_by_longer_end_landmarks
+      debug "Selecting rules that have longer end landmarks"
+      @candidates = highest_scoring_by {|rule| rule.landmarks.last.size unless rule.landmarks.last.nil?}
+    end
+
+    # Returns a random candidate. Meant for making the final choice in case
+    # previous selections have still left multiple candidates.
+    def random_from_remaining
+      debug "Selecting random from last #{candidates.size} candidate rules"
+      @candidates.sort_by {rand}.first
+    end
+
+    private
     # All scoring functions use this indirectly. It iterates over each
     # Rule candidate, and assigns it a score in a hash of index:score pairs.
     # Each rule is yielded to the given block, which is expected to return that
@@ -51,44 +90,6 @@ module Ariel
       end
       debug "#{highest_scorers.size} highest_scorers were found, with a score of #{best_score}"
       return highest_scorers
-    end
-
-    def select_with_fewer_wildcards
-      debug "Selecting the rules with the fewest wildcards"
-      @candidates = highest_scoring_by {|rule| -rule.wildcard_count} #hack or not?
-      return @candidates
-    end
-
-    def select_closest_to_label
-      debug "Selecting rules that match the examples closest to the label"
-      @candidates = highest_scoring_by do |rule|
-        rule_score=0
-        matched_examples=0
-        @examples.each do |example|
-          match_index = rule.apply_to(example)
-          if match_index.nil?
-            next
-          else
-            rule_score+= (example.label_index - match_index).abs
-            matched_examples+=1
-          end
-        end
-        rule_score = rule_score.to_f/matched_examples unless matched_examples==0 #mean distance from label_index
-        -rule_score #So highest scoring = closest to label index.
-      end
-      return @candidates
-    end
-
-    def select_with_longer_end_landmarks
-      debug "Selecting rules that have longer end landmarks"
-      @candidates = highest_scoring_by {|rule| rule.landmarks.last.size unless rule.landmarks.last.nil?}
-    end
-
-    # Returns a random candidate. Meant for making the final choice in case
-    # previous selections have still left multiple candidates.
-    def random_from_remaining
-      debug "Selecting random from last #{candidates.size} candidate rules"
-      @candidates.sort_by {rand}.first
     end
   end
 end
