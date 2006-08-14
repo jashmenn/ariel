@@ -29,7 +29,7 @@ module Ariel
         debug "RuleSet matched with start_idxs=#{start_idxs.inspect} and end_idxs=#{end_idxs.inspect}"
         start_idxs.zip(end_idxs) do |start_idx, end_idx|
           if start_idx && end_idx
-            next if end_idx > start_idx
+            next if start_idx > end_idx
             result << tokenstream.slice_by_token_index(start_idx, end_idx)
             yield result.last if block_given?
           else

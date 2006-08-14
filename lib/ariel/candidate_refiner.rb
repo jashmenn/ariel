@@ -5,10 +5,11 @@ module Ariel
   # methods will remove candidates from the internal candidates array.
   class CandidateRefiner
 
-    attr_accessor :candidates
-    def initialize(candidates, examples)
+    attr_accessor :candidates, :cache
+    def initialize(candidates, examples, cache={})
       @candidates=candidates.dup #Just in case we directly modify the array. Shouldn't happen.
       @examples=examples
+      @cache=cache
     end
 
     # Selects the Rule candidates that have the most matches of a given type

@@ -7,6 +7,6 @@ structure = Ariel::Node::Structure.new do |r|
   end
 end
 
-File.open('structure.yaml') do |file|
+File.open('structure.yaml', 'w') do |file|
   YAML.dump structure, file
 end

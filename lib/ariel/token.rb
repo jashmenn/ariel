@@ -64,5 +64,10 @@ module Ariel
     def matching_wildcards
       return Wildcards.matching(self.text)
     end
+
+    # Redefined for caching purposes
+#    def hash
+#      [@text, @start_loc, @end_loc, @label_tag].hash
+#    end
   end
 end

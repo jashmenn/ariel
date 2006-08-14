@@ -1,14 +1,16 @@
+require 'ariel/wildcards'
+require 'ariel/label_utils'
 require 'ariel/token'
 require 'ariel/token_stream'
 require 'ariel/learner'
 require 'ariel/node/structure'
 require 'ariel/node/extracted'
 require 'ariel/rule'
-require 'ariel/wildcards'
 require 'ariel/candidate_refiner'
-require 'ariel/label_utils'
-require 'ariel/example_document_loader'
+require 'ariel/labeled_document_loader'
 require 'ariel/rule_set'
+
+require 'breakpoint'
 
 if $DEBUG
 #  require 'logger'
@@ -61,8 +63,52 @@ end
 #    different pages from a single site perhaps) and query the extracted data.
 module Ariel
 
+  class << self
+    # Given a root Node::Structure and a list of labeled_files (either IO objects
+    # or strings representing a file that can be opened with File.read, will learn
+    # rules using the labeled examples. The passed Node::Structure tree is
+    # returned with new RuleSets added containing the learnt rules. This structure
+    # can now be used with Ariel.extract.
+    def learn(structure, *labeled_files)
+      raise ArgumentError, "Passed structure is not the parent of the document tree" unless structure.parent.nil?
+      labeled_strings=collect_strings(labeled_files)
+      return LabeledDocumentLoader.supervise_learning(structure, *labeled_strings)
+    end
 
+    # Will use the given root Node::Structure to extract information from each of
+    # the given files (can be any object responding to #read, and if passed a
+    # string the parameter will be opened using File.read). If a block is given,
+    # each root Node::Extracted is yielded. An array of each root extracted node
+    # is returned.
+    def extract(structure, *files_to_extract)
+      raise ArgumentError, "Passed structure is not the parent of the document tree" unless structure.parent.nil?
+      extractions=[]
+      collect_strings(files_to_extract).each do |string|
+        tokenstream = TokenStream.new
+        tokenstream.tokenize string
+        root_node=Ariel::Node::Extracted.new :root, tokenstream, structure
+        structure.apply_extraction_tree_on root_node
+        extractions << root_node
+        yield root_node if block_given?
+      end
+      return extractions
+    end
 
+    private
+    def collect_strings(files)
+      strings=[]
+      files.each do |file|
+        if file.kind_of? String
+          strings << File.read(file)
+        elsif file.respond_to? :read
+          strings << file.read
+        else
+          raise ArgumentError, "Don't know how to handle #{file.inspect}"
+        end
+      end
+      return strings
+    end
+  end
 end
 
 

@@ -29,6 +29,7 @@ module Ariel
     def extract_from(node)
       extractions=[]
       i=0
+      breakpoint
       @ruleset.apply_to(node.tokenstream) do |newstream|
         if self.node_type==:list
           new_node_name=i
@@ -48,7 +49,7 @@ module Ariel
       extraction_queue = [root_node]
       until extraction_queue.empty? do
         new_parent = extraction_queue.shift
-        new_parent.meta.structure.children.values.each do |child|
+        new_parent.structure_node.children.values.each do |child|
           if extract_labels
             extractions=LabelUtils.extract_labeled_region(child, new_parent)
           else
@@ -63,6 +64,9 @@ module Ariel
     def item(name, &block)
       self.add_child(Node::Structure.new(name, &block))
     end
+    # Extracting a list is really the same as extracting a normal item, but
+    # people probably still prefer to call a list a list.
+    alias :list :item
 
     def list_item(name, &block)
       self.add_child(Node::Structure.new(name, :list, &block))

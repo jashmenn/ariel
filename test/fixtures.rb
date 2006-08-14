@@ -24,11 +24,27 @@ Title: <l:title>Another example</l:title>
 <l:body>I love to write examples, you love to read them, ruby loves to process them.
 In conclusion, we're has happy as can be.</l:body>
 <l:comment_list>Comments:
-<l:comment>Title:<l:title>Great example</l:title>
+<ol>
+<li><l:comment>Title:<l:title>Great example</l:title>
 <l:author>Adoring fan</l:author>
 <l:body>Always love reading your examples, keep up the great work.</l:body>
-</l:comment></l:comment_list>
+</l:comment></li>
+<li><l:comment>Title: <l:title>Some advice</l:title>
+<l:author>Wise old man</l:author>
+<l:body>Keep your friends close and your enemies closer.</l:body>
+</l:comment></li></l:comment_list>
 EOS
+
+  @@labeled_document_with_list_structure = Ariel::Node::Structure.new do |r|
+    r.item :title
+    r.item :body
+    r.item :comment_list do |c|
+      c.list_item :comment do |d|
+        d.item :author
+        d.item :body
+      end
+    end
+  end
 
   @@labeled_addresses=Array.new(4) {Ariel::TokenStream.new}
   @@labeled_addresses[0].tokenize("513 Pico <b>Venice</b>, Phone: 1-<b>800</b>-555-1515")

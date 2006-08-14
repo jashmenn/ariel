@@ -102,12 +102,6 @@ context "A TokenStream instance which has tokenized unlabeled text" do
     @tokenstream.cur_pos.should_equal 4
   end
 
-  specify "Should make sure cur_pos still points to the same token when asked to reverse" do
-    @tokenstream.cur_pos=1
-    @tokenstream.tokens.reverse.should_equal @tokenstream.reverse!.tokens
-    @tokenstream.current_token.should_equal @tokenstream.tokens.reverse[1]
-  end
-
   specify "reverse should not modify the receiver" do
     @tokenstream.reverse.should_not_equal @tokenstream
     @tokenstream.reverse.tokens.should_not_equal @tokenstream.tokens

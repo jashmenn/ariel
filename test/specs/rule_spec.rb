@@ -1,7 +1,6 @@
 require 'ariel'
 require 'fixtures'
 include Fixtures
-require 'breakpoint'
 
 tokenstream=Ariel::TokenStream.new
 tokenstream.tokenize @@unlabeled_document
@@ -38,6 +37,8 @@ context "A back rule with no landmarks" do
   end
 
   specify "Should match any tokenstream at its last token" do
+    match_loc=@rule.apply_to(tokenstream)
+    p match_loc
     tokenstream.tokens[*@rule.apply_to(tokenstream)].should_equal tokenstream.tokens.last
   end
 end
@@ -85,6 +86,13 @@ context "Applying a non-exhaustive forward rule" do
     failed_rule=Ariel::Rule.new(:forward, [["bacon"]])
     failed_rule.matches(labeled_tokenstream, :fail).should_equal true
   end
+
+  specify "apply_to should apply the rule in the right direction whether the tokenstream is reversed or not. The returned match should be from the left" do
+    @rule.apply_to(labeled_tokenstream).should_equal [1]
+    @rule.apply_to(labeled_tokenstream.reverse).should_equal [labeled_tokenstream.tokens.size-2]
+    
+  end
+
 end
 
 context "Applying a non-exhaustive back rule" do

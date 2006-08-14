@@ -9,7 +9,9 @@ structure = Ariel::Node::Structure.new do |r|
   r.item :owner
   r.item :homepage
   r.item :license
-  r.item :version_history
+  r.list :version_history do |v|
+    v.list_item :version
+  end
 end
 
 File.open('structure.yaml', 'wb') do |file|

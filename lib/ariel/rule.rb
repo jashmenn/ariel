@@ -7,7 +7,8 @@ module Ariel
   class Rule
     attr_accessor :landmarks, :direction, :exhaustive
     @@RuleMatchData=Struct.new(:token_loc, :type)
- 
+    @@cache={}
+
     # A rule's direction can be :back or :forward, which determines whether it
     # is applied from the start of end of the TokenStream. The landmark array
     # contains an array for each landmark, which consists of one or more
@@ -31,7 +32,7 @@ module Ariel
     alias :eql? :==
 
     def hash
-      [@landmarks, @direction].hash
+      [@landmarks, @direction, @exhaustive].hash
     end
 
     # Returns a rule that contains a given range of 
@@ -72,10 +73,16 @@ module Ariel
     # reversed state or not.
     def apply_to(tokenstream) 
       target=prepare_tokenstream(tokenstream)
-      token_locs=[]
-      while result=seek_landmarks(target)
-        token_locs << result
-        break unless exhaustive?
+      cache_check=@@cache[[tokenstream.cache_hash, self.hash]]
+      if cache_check
+        token_locs=cache_check
+      else
+        token_locs=[]
+        while result=seek_landmarks(target)
+          token_locs << correct_match_location(tokenstream, result)
+          break unless exhaustive?
+        end
+        @@cache[[tokenstream.cache_hash, self.hash]]=token_locs
       end
       if block_given?
         generate_match_data(target, token_locs).each {|md| yield md}
@@ -90,7 +97,7 @@ module Ariel
       raise ArgumentError, "No match types given" if types.empty?
       raise ArgumentError, "Only applicable to tokenstreams containing a label" if tokenstream.label_index.nil?
       match = nil
-      apply_to(tokenstream) {|md| match=md.type if md.type}
+      apply_to(tokenstream) {|md| match=md.type if md.type;}
       match = :fail if match.nil?
       if types.include? match
         return true
@@ -112,19 +119,32 @@ module Ariel
 
     # Finds the sequence of landmarks contained in the Rule instance in the
     # given tokenstream. The logic of reversing or rewinding the stream if necessary
-    # is left to the method that uses it.
+    # is left to the method that uses it. Returns the match location from the
+    # beginning of whatever tokenstream it was passed. This location should be
+    # corrected by correct_match_location
     def seek_landmarks(tokenstream)
       @landmarks.each do |landmark|
         unless tokenstream.skip_to(*landmark)
           return nil
         end
       end
-      token_loc=tokenstream.cur_pos
-      if @direction==:back && !tokenstream.reversed?
-        token_loc = tokenstream.reverse_pos(token_loc) #Return position from left of given stream
-      end
-      return token_loc
+      return tokenstream.cur_pos
     end
+
+    # Takes the original tokenstream passed to apply_to and reverses the match
+    # location is required, so the match location returned to the user will be
+    # the index from the left of the passed tokenstream.
+    def correct_match_location(tokenstream, match_loc)
+      if tokenstream.reversed?
+        result=match_loc if @direction==:back
+        result=tokenstream.reverse_pos(match_loc) if @direction==:forward
+      elsif not tokenstream.reversed?
+        result=match_loc if @direction==:forward
+        result=tokenstream.reverse_pos(match_loc) if @direction==:back
+      end
+      return result
+    end
+
 
     # Reverses the tokenstream if necessary based on its current direction, and
     # the direction of the rule to be applied
@@ -137,7 +157,7 @@ module Ariel
         target=tokenstream.reverse if @direction==:back
       end
       target.rewind #rules are applied from the beginning of the stream
-      return tokenstream
+      return target
     end
 
     def generate_match_data(tokenstream, token_locs)

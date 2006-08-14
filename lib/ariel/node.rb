@@ -16,6 +16,9 @@ module Ariel
     def add_child(node) 
       @children[node.node_name]=node
       node.parent = self
+      # Trick stolen from OpenStruct
+      meta = class << self; self; end
+      meta.send(:define_method, node.node_name) {@children[node.node_name]}
     end
 
     def each_descendant(include_self=false)
@@ -27,14 +30,6 @@ module Ariel
       until node_queue.empty? do
         node_queue.concat node_queue.first.children.values
         yield node_queue.shift
-      end
-    end
-
-    def method_missing(method, *args, &block)
-      if @children.has_key? method
-        @children[method]
-      else
-        super
       end
     end
   end

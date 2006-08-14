@@ -26,10 +26,11 @@ module Ariel
     # number of examples correctly and fails on all overs. All matched examples
     # are then removed and the process is repeated considering all examples that
     # remain. Returns an array of the rules found (in order).
-    def learn_rule(direction)
+    def learn_rule(direction, exhaustive=false)
       debug "Searching for a #{direction} rule"
       @direction=direction
-      @current_rule=Rule.new(direction)
+      @exhaustive=exhaustive
+      @current_rule=Rule.new(direction, [], exhaustive)
       combined_rules=[]
       while not @examples.empty?
         set_seed unless @examples.include? @current_seed
@@ -59,11 +60,11 @@ module Ariel
     # token's text or any of it's matching wildcards.
     def generate_initial_candidates
       if current_seed.label_index==0
-        @candidates << Rule.new(@direction)
+        @candidates << Rule.new(@direction, [], @exhaustive)
       else
         end_token=current_seed.tokens[current_seed.label_index-1]
         debug "Creating initial candidates based on #{end_token.text}"
-        @candidates<< Rule.new(@direction, [[end_token.text]])
+        @candidates<< Rule.new(@direction, [[end_token.text]], @exhaustive)
         @candidates.concat(@candidates[0].generalise_feature(0))
         debug "Initial candidates: #{@candidates.inspect} created"
       end

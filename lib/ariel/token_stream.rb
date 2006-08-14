@@ -16,18 +16,19 @@ module Ariel
   class TokenStream
     include Enumerable
     attr_accessor :tokens, :cur_pos, :label_index, :original_text
-    
-    def initialize()
-      @tokens=[]
-      @cur_pos=0
-      @original_text = ""
-      @token_regexen = [
+
+    TOKEN_REGEXEN = [
       Wildcards.list[:html_tag], # Match html tags that don't have attributes
       /\d+/, # Match any numbers, probably good to make a split
       /\b\w+\b/, # Pick up words, will split at punctuation
       /\S/ # Grab any characters left over that aren't whitespace
       ]
-      @label_tag_regexen = [LabelUtils.any_label_regex]
+    LABEL_TAG_REGEXEN = [LabelUtils.any_label_regex]
+    
+    def initialize()
+      @tokens=[]
+      @cur_pos=0
+      @original_text = ""
       @reversed=false
       @contains_label_tags=false
     end
@@ -38,7 +39,7 @@ module Ariel
     # offsets. The same is then done with the next regular expression on each of
     # these split strings, and new tokens are created with the correct offset in
     # the original text. Any characters left unmatched by any of the regular
-    # expressions in @token_regexen are discarded. This approach allows a
+    # expressions in TokenStream::TOKEN_REGEXEN are discarded. This approach allows a
     # hierarchy of regular expressions to work simply and easily. A simple
     # regular expression to match html tags might operate first, and then later
     # expressions that pick up runs of word characters can operate on what's
@@ -50,10 +51,15 @@ module Ariel
       string_array=[[input, 0]]
       @original_text = input
       @contains_label_tags=contains_label_tags
-      @label_tag_regexen.each {|regex| split_string_array_by_regex(string_array, regex, false)} if contains_label_tags
-      @token_regexen.each {|regex| split_string_array_by_regex(string_array, regex)}
+      LABEL_TAG_REGEXEN.each {|regex| split_string_array_by_regex(string_array, regex, false)} if contains_label_tags
+      TOKEN_REGEXEN.each {|regex| split_string_array_by_regex(string_array, regex)}
       @tokens.sort!
       @tokens.size
+    end
+
+    # Note, token.cache_hash!=token.reverse.reverse.cache_hash. 
+    def cache_hash
+      [@tokens, @reversed].hash
     end
 
     def contains_label_tags?
@@ -171,7 +177,6 @@ module Ariel
       if label_index
         @label_index = reverse_pos(@label_index)
       end
-      @cur_pos = reverse_pos(@cur_pos)
       @reversed=!@reversed
       return self
     end

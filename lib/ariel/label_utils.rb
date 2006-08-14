@@ -15,7 +15,7 @@ module Ariel
       /#{S_LABEL}\/#{namespace}:#{tag_contents}#{E_LABEL}/i]
     end
 
-    # Helper function that returns a regex that will return any open or closing
+    # Helper function that returns a regex that will match any open or closing
     # label tags.
     def self.any_label_regex()
       Regexp.union(*self.label_regex)
@@ -34,20 +34,23 @@ module Ariel
       tokenstream=parent_extracted_node.tokenstream
       start_idxs=[]
       end_idxs=[]
-      while start_idx=self.skip_to_label_tag(tokenstream, structure.node_name, :open)
+      tokenstream.rewind
+      while start_idx = self.skip_to_label_tag(tokenstream, structure.node_name, :open)
         start_idxs << start_idx
-        break unles structure.node_type==:list
+        break unless structure.node_type==:list
       end
+      tokenstream.rewind
       while end_idx=self.skip_to_label_tag(tokenstream, structure.node_name, :closed)
-        end_idxs << end_idx
+        end_idxs << (end_idx -2) #rewind to token before the label tag token
+        break unless structure.node_type==:list
       end
       result=[]
       i=0
       start_idxs.zip(end_idxs) do |start_idx, end_idx|
-        if start_idx && end_idx && (start_idx < end_idx)
+        if start_idx && end_idx && (start_idx <= end_idx)
           newstream=tokenstream.slice_by_token_index(start_idx, end_idx)
           if structure.node_type==:list
-            new_name=i
+            new_name=i.to_s
           else
             new_name = structure.node_name
           end
@@ -76,8 +79,9 @@ module Ariel
       debug "Seeking #{name.to_s} of type #{type}"
       nesting_level=0
       tokenstream.each do |token|
-        if token.matches?(regex)
-          return tokenstream.cur_pos if nesting_level==0
+        if token.matches?(regex) && nesting_level==0
+          debug "Found a match"
+          return tokenstream.cur_pos
         end
         if token.matches?(self.label_regex[0])
           # Don't increase nesting if encounter the unnested start tag that
@@ -85,10 +89,11 @@ module Ariel
           nesting_level+=1 unless nesting_level==0 && token.matches?(self.label_regex(name.to_s)[0])
           debug "Encountered token \"#{token.text}\", nesting level=#{nesting_level}"
         elsif token.matches?(self.label_regex[1])
-          nesting_level-=1
+          nesting_level-=1 unless nesting_level==0 && token.matches?(self.label_regex(name.to_s)[1])
           debug "Encountered token \"#{token.text}\", nesting level=#{nesting_level}"
         end
       end
+      return nil
     end
   end
 end

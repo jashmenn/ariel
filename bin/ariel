@@ -31,24 +31,27 @@ require 'ariel' #After option parsing to debug setting can take effect
 case options[:mode]
 when "learn"
   structure=YAML.load_file options[:structure]
-  learnt_structure=Ariel::ExampleDocumentLoader.load_directory options[:dir], structure
+  files=Dir["#{options[:dir]}/*"].select {|file_name| File.file? file_name}
+  Ariel.learn(structure, *files)
   File.open(options[:structure], 'wb') do |file|
-    YAML.dump(learnt_structure, file)
+    YAML.dump(structure, file)
   end
-  learnt_structure.each_descendant do |structure_node|
-    puts structure_node.meta.name.to_s
+
+  # Debugging
+  structure.each_descendant do |structure_node|
+    puts structure_node.node_name.to_s
     puts structure_node.ruleset.to_yaml
   end
+
 when "extract"
-  learnt_structure=YAML.load_file options[:structure]
-  Dir.glob("#{options[:dir]}/*") do |file|
-    tokenstream=Ariel::TokenStream.new
-    tokenstream.tokenize File.read(file)
-    root_node=Ariel::Node::Extracted.new :root, tokenstream, learnt_structure
-    learnt_structure.apply_extraction_tree_on root_node
-    puts "Results for #{file}:"
-    root_node.each_descendant do |node|
-      puts "#{node.meta.name}: #{node.tokenstream.text}"
+  structure=YAML.load_file options[:structure]
+  files=Dir["#{options[:dir]}/*"]
+  extractions = Ariel.extract(structure, *files)
+  # Do whatever we should do
+  #debug
+  extractions.each do |extraction| 
+    extraction.each_descendant do |node|
+      puts "#{node.node_name}: #{node.tokenstream.text}"
     end
     puts
    # puts root_node.to_yaml

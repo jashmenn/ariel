@@ -1,46 +1,150 @@
---- &id002 !ruby/object:Ariel::StructureNode 
+--- &id002 !ruby/object:Ariel::Node::Structure 
 children: 
-  :calculation: &id001 !ruby/object:Ariel::StructureNode 
+  :calculation: &id001 !ruby/object:Ariel::Node::Structure 
     children: 
-      :result: !ruby/object:Ariel::StructureNode 
+      :result: !ruby/object:Ariel::Node::Structure 
         children: {}
 
-        meta: !ruby/object:OpenStruct 
-          table: 
-            :node_type: :not_list
-            :name: :result
+        node_name: :result
+        node_type: :not_list
         parent: *id001
         ruleset: !ruby/object:Ariel::RuleSet 
           end_rules: 
           - !ruby/object:Ariel::Rule 
+            cache: 
+              ?
+                - -173768199
+                - 12567044
+              : 
+                - 0
+
             direction: :back
+            exhaustive: false
             landmarks: []
 
           start_rules: 
           - !ruby/object:Ariel::Rule 
+            cache: 
+              ?
+                - -602478787
+                - 12563196
+              : 
+                - 3
+
             direction: :forward
+            exhaustive: false
             landmarks: 
             - - "="
-    meta: !ruby/object:OpenStruct 
-      table: 
-        :node_type: :not_list
-        :name: :calculation
+    node_name: :calculation
+    node_type: :not_list
     parent: *id002
     ruleset: !ruby/object:Ariel::RuleSet 
       end_rules: 
       - !ruby/object:Ariel::Rule 
+        cache: 
+          ?
+            - -247389738
+            - -52645645
+          : 
+            - 185
+
+          ?
+            - -247389738
+            - 68834596
+          : 
+            - 288
+
+          ?
+            - -206640874
+            - 68834596
+          : 
+            - 298
+
+          ?
+            - 940421071
+            - 68834596
+          : 
+            - 292
+
+          ?
+            - -206640874
+            - -52645645
+          : 
+            - 185
+
+          ?
+            - 940421071
+            - -52645645
+          : 
+            - 185
+
         direction: :back
+        exhaustive: false
         landmarks: 
         - - </b>
         - - </b>
       start_rules: 
       - !ruby/object:Ariel::Rule 
+        cache: 
+          ?
+            - -863982935
+            - -70577228
+          : 
+            - 818
+
+          ?
+            - 571416472
+            - 868916164
+          : 
+            - 1617
+
+          ?
+            - -619338906
+            - -70577228
+          : 
+            - 800
+
+          ?
+            - 571416472
+            - -70577228
+          : 
+            - 819
+
+          ?
+            - -863982935
+            - 868916164
+          : 
+            - 1647
+
+          ?
+            - -619338906
+            - 868916164
+          : 
+            - 1579
+
+          ?
+            - -619338906
+            - 616527400
+          : 
+            - 1560
+
+          ?
+            - -863982935
+            - 616527400
+          : 
+            - 1628
+
+          ?
+            - 571416472
+            - 616527400
+          : 
+            - 1598
+
         direction: :forward
+        exhaustive: false
         landmarks: 
         - - <b>
         - - gif
         - - <b>
-meta: !ruby/object:OpenStruct 
-  table: 
-    :node_type: :not_list
-    :name: :root
+node_name: :root
+node_type: :not_list
