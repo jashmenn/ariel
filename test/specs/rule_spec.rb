@@ -11,7 +11,7 @@ labeled_tokenstream.label_index=4
 
 context "A forward rule with no landmarks" do
   setup do
-    @rule=Ariel::Rule.new(:forward)
+    @rule=Ariel::Rule.new([], :forward)
   end
 
   specify "Should return its direction correctly" do
@@ -33,7 +33,7 @@ end
 
 context "A back rule with no landmarks" do
   setup do
-    @rule=Ariel::Rule.new(:back)
+    @rule=Ariel::Rule.new([], :back)
   end
 
   specify "Should match any tokenstream at its last token" do
@@ -45,13 +45,13 @@ end
 
 context "Creating a new rule" do
   specify "Should not be possible to create a rule with an invalid direction" do
-    lambda {Ariel::Rule.new(:upward, [[:anything]])}.should_raise
+    lambda {Ariel::Rule.new([[:anything]], :upward)}.should_raise
   end
 end
 
 context "Applying a non-exhaustive forward rule" do
   setup do
-    @rule=Ariel::Rule.new :forward, [[:anything]]
+    @rule=Ariel::Rule.new [[:anything]], :forward
   end
   specify "apply_to should return an array of match locations" do
     locs=@rule.apply_to(tokenstream)
@@ -69,11 +69,11 @@ context "Applying a non-exhaustive forward rule" do
     @rule.apply_to(labeled_tokenstream) do |md|
       md.type.should_equal :early
     end
-    late_rule=Ariel::Rule.new :forward, [["assess"]]
+    late_rule=Ariel::Rule.new [["assess"]], :forward
     late_rule.apply_to(labeled_tokenstream) do |md|
       md.type.should_equal :late
     end
-    perfect_rule = Ariel::Rule.new :forward, [["test"]]
+    perfect_rule = Ariel::Rule.new [["test"]], :forward
     perfect_rule.apply_to(labeled_tokenstream) do |md|
       md.type.should_equal :perfect
       md.token_loc.should_equal 4
@@ -83,7 +83,7 @@ context "Applying a non-exhaustive forward rule" do
   specify "matches should return true or false if applying the rule to a labeled tokenstream results in a match of one of the given types" do
     @rule.matches(labeled_tokenstream, :late, :perfect, :fail).should_equal false
     @rule.matches(labeled_tokenstream, :early, :late, :perfect, :fail).should_equal true
-    failed_rule=Ariel::Rule.new(:forward, [["bacon"]])
+    failed_rule=Ariel::Rule.new([["bacon"]], :forward)
     failed_rule.matches(labeled_tokenstream, :fail).should_equal true
   end
 
@@ -101,7 +101,7 @@ end
 
 context "Applying an exhaustive rule" do
   setup do
-    @rule = Ariel::Rule.new :forward, [[:html_tag]], true
+    @rule = Ariel::Rule.new [[:html_tag]], :forward, true
   end
 
   specify "apply_to should return an array of multiple matches" do

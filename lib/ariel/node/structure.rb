@@ -29,10 +29,10 @@ module Ariel
     def extract_from(node)
       extractions=[]
       i=0
-      breakpoint
       @ruleset.apply_to(node.tokenstream) do |newstream|
         if self.node_type==:list
-          new_node_name=i
+          new_node_name=i.to_s
+          i+=1
         else
           new_node_name=@node_name
         end

@@ -17,15 +17,16 @@ module Ariel
       start_idxs=nil
       end_idxs=nil
       @start_rules.each do |rule|
-        start_idxs=rule.apply_to tokenstream
-        break if start_idxs
+      start_idxs=rule.apply_to tokenstream
+        break if !start_idxs.empty?
       end
       @end_rules.each do |rule|
         end_idxs=rule.apply_to tokenstream
-        break if end_idxs
+        end_idxs.reverse! #So the start_idxs and end_idxs match up
+        break if !end_idxs.empty?
       end
       result=[]
-      if start_idxs && end_idxs
+      unless start_idxs.empty? && end_idxs.empty?
         debug "RuleSet matched with start_idxs=#{start_idxs.inspect} and end_idxs=#{end_idxs.inspect}"
         start_idxs.zip(end_idxs) do |start_idx, end_idx|
           if start_idx && end_idx

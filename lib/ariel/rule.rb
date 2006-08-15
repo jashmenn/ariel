@@ -12,8 +12,8 @@ module Ariel
     # A rule's direction can be :back or :forward, which determines whether it
     # is applied from the start of end of the TokenStream. The landmark array
     # contains an array for each landmark, which consists of one or more
-    # features. e.g. Rule.new(:forward, [[:anything, "Example"], ["Test"]]).
-    def initialize(direction, landmarks=[], exhaustive=false)
+    # features. e.g. Rule.new([[:anything, "Example"], ["Test"]], :forward).
+    def initialize(landmarks, direction, exhaustive=false)
       @landmarks=landmarks
       raise(ArgumentError, "Not a valid direction") unless [:forward, :back].include?(direction)
       @direction=direction
