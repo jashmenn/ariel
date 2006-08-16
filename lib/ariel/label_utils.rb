@@ -50,7 +50,8 @@ module Ariel
         if start_idx && end_idx && (start_idx <= end_idx)
           newstream=tokenstream.slice_by_token_index(start_idx, end_idx)
           if structure.node_type==:list
-            new_name=i.to_s
+            new_name="#{structure.node_name}_#{i}"
+            i+=1
           else
             new_name = structure.node_name
           end
@@ -58,7 +59,6 @@ module Ariel
           result << child_node
           parent_extracted_node.add_child child_node
           yield child_node if block_given?
-          i+=1
         else
           break
         end
@@ -76,21 +76,21 @@ module Ariel
         re_index=1
       end
       regex = self.label_regex(name.to_s)[re_index]
-      debug "Seeking #{name.to_s} of type #{type}"
+      Log.debug "Seeking #{name.to_s} of type #{type}"
       nesting_level=0
       tokenstream.each do |token|
         if token.matches?(regex) && nesting_level==0
-          debug "Found a match"
+          Log.debug "Found a match"
           return tokenstream.cur_pos
         end
         if token.matches?(self.label_regex[0])
           # Don't increase nesting if encounter the unnested start tag that
           # pairs with the end tag we're searching for.
           nesting_level+=1 unless nesting_level==0 && token.matches?(self.label_regex(name.to_s)[0])
-          debug "Encountered token \"#{token.text}\", nesting level=#{nesting_level}"
+          Log.debug "Encountered token \"#{token.text}\", nesting level=#{nesting_level}"
         elsif token.matches?(self.label_regex[1])
           nesting_level-=1 unless nesting_level==0 && token.matches?(self.label_regex(name.to_s)[1])
-          debug "Encountered token \"#{token.text}\", nesting level=#{nesting_level}"
+          Log.debug "Encountered token \"#{token.text}\", nesting level=#{nesting_level}"
         end
       end
       return nil

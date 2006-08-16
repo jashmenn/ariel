@@ -17,7 +17,7 @@ module Ariel
     # will select the rules that have the most matches that are early or
     # perfect.
     def refine_by_match_type(*match_types)
-      debug "Refining by match types #{match_types.inspect}"
+      Log.debug "Refining by match types #{match_types.inspect}"
       return @candidates if @candidates.size==1
       @candidates = highest_scoring_by do |rule|
         rule_score=0
@@ -30,13 +30,13 @@ module Ariel
     end
 
     def refine_by_fewer_wildcards
-      debug "Refining to the rules with the fewest wildcards"
+      Log.debug "Refining to the rules with the fewest wildcards"
       @candidates = highest_scoring_by {|rule| -rule.wildcard_count} #hack or not?
       return @candidates
     end
 
     def refine_by_label_proximity
-      debug "Selecting rules that match the examples closest to the label"
+      Log.debug "Selecting rules that match the examples closest to the label"
       @candidates = highest_scoring_by do |rule|
         rule_score=0
         matched_examples=0
@@ -56,14 +56,14 @@ module Ariel
     end
 
     def refine_by_longer_end_landmarks
-      debug "Selecting rules that have longer end landmarks"
+      Log.debug "Selecting rules that have longer end landmarks"
       @candidates = highest_scoring_by {|rule| rule.landmarks.last.size unless rule.landmarks.last.nil?}
     end
 
     # Returns a random candidate. Meant for making the final choice in case
     # previous selections have still left multiple candidates.
     def random_from_remaining
-      debug "Selecting random from last #{candidates.size} candidate rules"
+      Log.debug "Selecting random from last #{candidates.size} candidate rules"
       @candidates.sort_by {rand}.first
     end
 
@@ -89,7 +89,7 @@ module Ariel
       score_hash.each do |candidate_index, score|
         highest_scorers << @candidates[candidate_index] if score==best_score
       end
-      debug "#{highest_scorers.size} highest_scorers were found, with a score of #{best_score}"
+      Log.debug "#{highest_scorers.size} highest_scorers were found, with a score of #{best_score}"
       return highest_scorers
     end
   end

@@ -7,7 +7,11 @@ module Ariel
 
     def initialize(name)
       @children={}
-      @node_name=name.to_sym
+      if name.kind_of? String
+				@node_name=name.to_sym
+			else
+				@node_name=name
+			end
     end
 
     # Given a Node object and a name, adds a child to the array of children,
@@ -18,7 +22,7 @@ module Ariel
       node.parent = self
       # Trick stolen from OpenStruct
       meta = class << self; self; end
-      meta.send(:define_method, node.node_name) {@children[node.node_name]}
+      meta.send(:define_method, node.node_name.to_s.to_sym) {@children[node.node_name]}
     end
 
     def each_descendant(include_self=false)

@@ -1,8 +1,7 @@
 module Ariel  
   # Contains all wildcards to be used in rule generation.
   class Wildcards
-    private_class_method :new
-    @@list = {
+    @list = {
         :anything=>/.+/,
         :numeric=>/\d+/,
         :alpha_numeric=>/\w+/,
@@ -12,22 +11,27 @@ module Ariel
         :html_tag=>/<\/?\w+>|<\w+\s+\/>/,
         :punctuation=>/[[:punct:]]+/
       }
-    # Returns the hash of wildcard name (symbol) and regular expression pairs.
-    def self.list
-      @@list
-    end
 
-    # Given a string, will return an array of symbols from Wildcards::list that
-    # match it.
-    def self.matching(string)
-      matches=[]
-      @@list.each do |name, regex|
-        if string[regex]==string
-          yield name if block_given?
-          matches << name
-        end
+    class << self
+      private :new
+      # Returns the hash of wildcard name (symbol) and regular expression pairs.
+      def list
+        @list
       end
-      matches
+
+      # Given a string, will return an array of symbols from Wildcards::list that
+      # match it.
+      def matching(string)
+        matches=[]
+        @list.each do |name, regex|
+          if string[regex]==string
+            yield name if block_given?
+            matches << name
+          end
+        end
+        matches
+      end
+
     end
   end
 end

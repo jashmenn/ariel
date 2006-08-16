@@ -56,4 +56,19 @@ EOS
   @@labeled_addresses[3].tokenize("403 La Tijera, <b> Watts </b>, Phone: (310) 798-0008")
   @@labeled_addresses[3].set_label_at 39
 
+  # This example is from the STALKER paper, it suggests that SkipTo('<p><i>')
+  # would extract the start of the list, and the rules SkipTo '<i>' and SkipTo
+  # '</i>' would locate the start and end of each list item. If the first found
+  # end_loc and before the first start_loc, it should be assumed all tokens from
+  # 0...end_loc are one item.
+  @@unlabeled_restaurant_example=<<EOS
+<p> Name: <b> Yala </b><p> Cuisine: Thai <p><i>
+4000 Colfax, Phoenix, AZ 85258 (602) 508-1570
+</i><br><i>
+523 Vernon, Las Vegas, NV 89104 (702) 578-2293
+</i><br><i>
+403 Pico, LA, CA 90007 (213) 798-0008
+</i>
+EOS
+
 end

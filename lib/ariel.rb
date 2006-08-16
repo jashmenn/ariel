@@ -1,3 +1,4 @@
+require 'ariel/log'
 require 'ariel/wildcards'
 require 'ariel/label_utils'
 require 'ariel/token'
@@ -9,24 +10,6 @@ require 'ariel/rule'
 require 'ariel/candidate_refiner'
 require 'ariel/labeled_document_loader'
 require 'ariel/rule_set'
-
-require 'breakpoint'
-
-if $DEBUG
-#  require 'logger'
-
-#  DEBUGLOG = Logger.new(File.open('debug.log', 'wb'))
-#  DEBUGLOG.datetime_format = " \010"
-#  DEBUGLOG.progname = "\010\010\010"
-
-  def debug(message)
-     p message
-    #DEBUGLOG.debug message
-  end
-else
-  def debug(message)
-  end
-end
 
 # = Ariel - A Ruby Information Extraction Library
 # Ariel intends to assist in extracting information from semi-structured

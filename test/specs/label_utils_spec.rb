@@ -75,9 +75,9 @@ context "Extracting labeled list items from a node" do
 
   end
 
-  specify "Should name each list_item numerically" do
-    @result[0].node_name.should_equal :"0"
-    @result[1].node_name.should_equal :"1"
+  specify "Should name each list item itemname_num" do
+    @result[0].node_name.should_equal :comment_0
+    @result[1].node_name.should_equal :comment_1
   end
 
   specify "Should add each list_item as as a child of the parent extracted node" do

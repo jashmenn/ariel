@@ -31,7 +31,7 @@ module Ariel
       i=0
       @ruleset.apply_to(node.tokenstream) do |newstream|
         if self.node_type==:list
-          new_node_name=i.to_s
+          new_node_name=i
           i+=1
         else
           new_node_name=@node_name

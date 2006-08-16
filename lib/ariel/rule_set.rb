@@ -27,7 +27,16 @@ module Ariel
       end
       result=[]
       unless start_idxs.empty? && end_idxs.empty?
-        debug "RuleSet matched with start_idxs=#{start_idxs.inspect} and end_idxs=#{end_idxs.inspect}"
+        # Following expression deals with the case where the first start rule
+        # matches after the first end rule, indicating that all tokens up to the
+        # end rule match should be a list item
+        if start_idxs.first > end_idxs.first
+          start_idxs.insert(0, 0)
+        end
+        if end_idxs.last < start_idxs.last
+          end_idxs << (tokenstream.size - 1)
+        end
+        Log.debug "RuleSet matched with start_idxs=#{start_idxs.inspect} and end_idxs=#{end_idxs.inspect}"
         start_idxs.zip(end_idxs) do |start_idx, end_idx|
           if start_idx && end_idx
             next if start_idx > end_idx

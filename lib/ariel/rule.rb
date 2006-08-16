@@ -63,7 +63,7 @@ module Ariel
     end
 
     # Given a TokenStream and a rule, applies the rule on the stream and
-    # returns nil if the match fails and the token_loc if the match succeeds.
+    # returns an empty array if the match fails and an array of token_locs if the match succeeds.
     # Yields a RuleMatchData Struct with accessors token_loc (the position of the match in the stream)
     # and type if a block is given. type is nil if the TokenStream has no label,
     # :perfect if all tokens up to the labeled token are consumed, :early if the rule's final position
@@ -72,7 +72,7 @@ module Ariel
     # token_loc is always from the left of the given stream whether it is in a
     # reversed state or not.
     def apply_to(tokenstream) 
-      target=prepare_tokenstream(tokenstream)
+      target=self.class.prepare_tokenstream(tokenstream, @direction)
       cache_check=@@cache[[tokenstream.cache_hash, self.hash]]
       if cache_check
         token_locs=cache_check
@@ -115,6 +115,21 @@ module Ariel
       return find_closest_match(token_locs, tokenstream.label_index)
     end
 
+    # Reverses the given tokenstream if necessary based on its current direction, and
+    # the direction given (corresponding to the sort of rule you hope to apply
+    # to it). 
+    def self.prepare_tokenstream(tokenstream, direction)
+      if tokenstream.reversed?
+        target=tokenstream if direction==:back
+        target=tokenstream.reverse if direction==:forward
+      elsif not tokenstream.reversed?
+        target=tokenstream if direction==:forward
+        target=tokenstream.reverse if direction==:back
+      end
+      target.rewind #rules are applied from the beginning of the stream
+      return target
+    end
+
     private
 
     # Finds the sequence of landmarks contained in the Rule instance in the
@@ -143,21 +158,6 @@ module Ariel
         result=tokenstream.reverse_pos(match_loc) if @direction==:back
       end
       return result
-    end
-
-
-    # Reverses the tokenstream if necessary based on its current direction, and
-    # the direction of the rule to be applied
-    def prepare_tokenstream(tokenstream)
-      if tokenstream.reversed?
-        target=tokenstream if @direction==:back
-        target=tokenstream.reverse if @direction==:forward
-      elsif not tokenstream.reversed?
-        target=tokenstream if @direction==:forward
-        target=tokenstream.reverse if @direction==:back
-      end
-      target.rewind #rules are applied from the beginning of the stream
-      return target
     end
 
     def generate_match_data(tokenstream, token_locs)

@@ -22,16 +22,17 @@ module Ariel
             end_examples << end_tstream
           end
           if structure_node.node_type==:list
-            breakpoint "list type"
             exhaustive=true
           else
-            breakpoint "non list"
             exhaustive=false
           end
+          Log.info "Learning rules for node #{structure_node.node_name} with #{example_nodes.size} examples"
           learner = Learner.new(*start_examples)
           start_rules = learner.learn_rule :forward, exhaustive
+          Log.info "Learnt start rules #{start_rules.inspect}"
           learner = Learner.new(*end_examples)
           end_rules = learner.learn_rule :back, exhaustive
+          Log.info "Learnt end rules, #{end_rules.inspect}"
           structure_node.ruleset=RuleSet.new(start_rules, end_rules)
         end
         return structure

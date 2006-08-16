@@ -111,7 +111,7 @@ module Ariel
         raise ArgumentError, "Given string position does not match the start of any token"
       else
         @label_index = token_pos
-        debug "Token ##{label_index} - \"#{@tokens[label_index].text}\" labeled."
+        Log.debug "Token ##{label_index} - \"#{@tokens[label_index].text}\" labeled."
         return @label_index
       end
     end
@@ -185,6 +185,11 @@ module Ariel
     # reversed state
     def reversed?
       @reversed
+    end
+
+    # Returns the number of tokens in the TokenStream
+    def size
+      @tokens.size
     end
     
     # Takes a list of Strings and Symbols as its arguments representing text to be matched in

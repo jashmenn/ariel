@@ -51,3 +51,23 @@ EOS
     result.each {|tokenstream| tokenstream.tokens.first.text.should_equal "Item"}
   end
 end
+
+context "Applying exhaustive rules to a document where the location of the first end_match is before the first start match" do
+  setup do
+    @tokenstream=Ariel::TokenStream.new
+    @tokenstream.tokenize @@unlabeled_restaurant_example
+    @tokenstream=@tokenstream.slice_by_token_index(12, (@tokenstream.tokens.size - 2))
+    @frule=Ariel::Rule.new [["<i>"]], :forward, true
+    @brule=Ariel::Rule.new [["</i>"]], :back, true
+    @ruleset=Ariel::RuleSet.new [@frule], [@brule]
+  end
+
+  specify "Should return correct matches" do
+    result=@ruleset.apply_to @tokenstream
+    result.size.should_equal 3
+    result[0].tokens.first.text.should_equal "4000"
+    result[1].tokens.first.text.should_equal "523"
+    result[2].tokens.first.text.should_equal "403"
+  end
+end
+

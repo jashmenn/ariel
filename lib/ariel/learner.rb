@@ -15,7 +15,7 @@ module Ariel
       if examples.any? {|example| example.label_index.nil?}
         raise ArgumentError, "Passed a TokenStream with no label"
       end
-      debug "ATTENTION: New Learner instantiated with #{examples.size} labeled examples"
+      Log.debug "ATTENTION: New Learner instantiated with #{examples.size} labeled examples"
       @examples=examples
       @candidates=[]
       set_seed
@@ -25,23 +25,29 @@ module Ariel
     # to use as its seed example, then finds a rule that matches the maximum
     # number of examples correctly and fails on all overs. All matched examples
     # are then removed and the process is repeated considering all examples that
-    # remain. Returns an array of the rules found (in order).
+    # remain. Returns an array of the rules found (in order). learn_rule will
+    # take care of reversing the given examples if necessary.
     def learn_rule(direction, exhaustive=false)
-      debug "Searching for a #{direction} rule"
+      Log.debug "Searching for a #{direction} rule"
+      @examples=@examples.collect {|tokenstream| Rule.prepare_tokenstream(tokenstream, direction)}
       @direction=direction
       @exhaustive=exhaustive
-      @current_rule=Rule.new(direction, [], exhaustive)
+      if exhaustive
+        @examples.delete_if {|example| example_is_unsuitable?(example)}
+        raise StandardError, "No examples are suitable for exhaustive rule learning" if @examples.empty?
+      end
+      @current_rule=Rule.new([], direction, exhaustive)
       combined_rules=[]
       while not @examples.empty?
         set_seed unless @examples.include? @current_seed
         rule = find_best_rule() # Find the rule that matches the most examples and fails on the others
         prev_size = @examples.size
         @examples.delete_if {|example| rule.apply_to(example)} #separate and conquer!
-        debug "Removing #{prev_size - @examples.size} examples matched by the generated rule, #{@examples.size} remain"
+        Log.debug "Removing #{prev_size - @examples.size} examples matched by the generated rule, #{@examples.size} remain"
         combined_rules << rule
       end
 #      rule = order_rule(rule) #STALKER paper suggests that the generated rules should be ordered. This doesn't make sense, seeing as they are all generated based only on examples not matched by previous rules
-      debug "Generated rules: #{combined_rules.inspect}"
+      Log.debug "Generated rules: #{combined_rules.inspect}"
       return combined_rules
     end
 
@@ -50,7 +56,7 @@ module Ariel
     def set_seed
       sorted = @examples.sort_by {|example| example.label_index}
       self.current_seed=sorted.first
-      debug "current_seed=#{current_seed.text}"
+      Log.debug "current_seed=#{current_seed.text}"
       return current_seed
     end
 
@@ -60,13 +66,13 @@ module Ariel
     # token's text or any of it's matching wildcards.
     def generate_initial_candidates
       if current_seed.label_index==0
-        @candidates << Rule.new(@direction, [], @exhaustive)
+        @candidates << Rule.new([], @direction, @exhaustive)
       else
         end_token=current_seed.tokens[current_seed.label_index-1]
-        debug "Creating initial candidates based on #{end_token.text}"
-        @candidates<< Rule.new(@direction, [[end_token.text]], @exhaustive)
+        Log.debug "Creating initial candidates based on #{end_token.text}"
+        @candidates<< Rule.new([[end_token.text]], @direction, @exhaustive)
         @candidates.concat(@candidates[0].generalise_feature(0))
-        debug "Initial candidates: #{@candidates.inspect} created"
+        Log.debug "Initial candidates: #{@candidates.inspect} created"
       end
       return @candidates.size
     end
@@ -84,7 +90,7 @@ module Ariel
         refine
       end
 #     return post_process(best_solution)
-      debug "Rule found: #{best_solution.inspect}"
+      Log.debug "Rule found: #{best_solution.inspect}"
       return best_solution
     end
 
@@ -96,16 +102,14 @@ module Ariel
       @examples.each do |example|
         if rule.matches(example, :perfect)
           perfect_count+=1
-          debug "#{rule.inspect} matches #{example.text} perfectly"
         elsif rule.matches(example, :fail) 
           fail_count+=1
-          debug "#{rule.inspect} fails to match #{example.text}"
         end
       end
       if (perfect_count >= 1) && (fail_count == (@examples.size - perfect_count))
         return true
       else
-        debug "Rule was not perfect, perfect_count=#{perfect_count}, fail_count=#{fail_count}"
+        Log.debug "Rule was not perfect, perfect_count=#{perfect_count}, fail_count=#{fail_count}"
         return false
       end
     end
@@ -130,7 +134,7 @@ module Ariel
       r.refine_by_label_proximity
       r.refine_by_longer_end_landmarks
       best_refiner = r.random_from_remaining #just pick a random one for now if still multiple
-      debug "best_refiner found => #{best_refiner.inspect}"
+      Log.debug "best_refiner found => #{best_refiner.inspect}"
       return best_refiner
     end
 
@@ -149,7 +153,7 @@ module Ariel
       r.refine_by_label_proximity
       r.refine_by_longer_end_landmarks
       best_solution = r.random_from_remaining
-      debug "best_solution found => #{best_solution.inspect}"
+      Log.debug "best_solution found => #{best_solution.inspect}"
       return best_solution
     end    
 
@@ -203,7 +207,7 @@ module Ariel
         refined_rules.concat b.generalise_feature(index, -1)
       end
       @candidates.concat refined_rules
-      debug "#{refined_rules.size} landmark refinements generated"
+      Log.debug "#{refined_rules.size} landmark refinements generated"
       return refined_rules.size
     end
 
@@ -228,11 +232,27 @@ module Ariel
           topology_refs << r
           topology_refs.concat r.generalise_feature(index+1)
       end
-    debug "Topology refinements before uniq! #{topology_refs.size}"
+    Log.debug "Topology refinements before uniq! #{topology_refs.size}"
     topology_refs.uniq!
     @candidates.concat topology_refs
-    debug "#{topology_refs.size} topology refinements generated"
+    Log.debug "#{topology_refs.size} topology refinements generated"
     return topology_refs.size
+    end
+
+    # When learning list iteration rules, some examples may be unsuitable. For
+    # instance if there is a list item at the start of an example with no tokens
+    # before it, a skip_to(nil) start rule would be generated that wouldn't make
+    # sense for exhaustive rules. The example should be caught by the
+    # corresponding end rule. This should only be run after tokenstream's have
+    # been prepared (reversed based on whether a :forward or :back rule is being
+    # searched for). Only returns a valid conclusion if the examples are
+    # intended to be used for exhaustive rule learning
+    def example_is_unsuitable?(tokenstream)
+      if tokenstream.label_index==0
+        return true
+      else
+        return false
+      end
     end
   end
 end

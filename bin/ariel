@@ -17,7 +17,7 @@ OptionParser.new do |opts|
     options[:dir]=dir
   end
 
-  opts.on('-D', '--debug', 'Directory to look for documents to operate on.') do 
+  opts.on('-D', '--debug', 'Enable debugging output.') do 
     $DEBUG=true
   end
 
@@ -26,12 +26,13 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-require 'ariel' #After option parsing to debug setting can take effect
+require 'ariel' #After option parsing so debug setting can take effect
+
+files=Dir["#{options[:dir]}/*"].select {|file_name| File.file? file_name}
+structure=YAML.load_file options[:structure]
 
 case options[:mode]
 when "learn"
-  structure=YAML.load_file options[:structure]
-  files=Dir["#{options[:dir]}/*"].select {|file_name| File.file? file_name}
   Ariel.learn(structure, *files)
   File.open(options[:structure], 'wb') do |file|
     YAML.dump(structure, file)
@@ -44,8 +45,6 @@ when "learn"
   end
 
 when "extract"
-  structure=YAML.load_file options[:structure]
-  files=Dir["#{options[:dir]}/*"]
   extractions = Ariel.extract(structure, *files)
   # Do whatever we should do
   #debug
