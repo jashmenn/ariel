@@ -3,7 +3,10 @@ require 'ariel/node'
 module Ariel
 
   # Each Node::Extracted has a name, a TokenStream and a structure which points to
-  # the relevant Node::Structure.
+  # the relevant Node::Structure. Skip straight to #search, #/ and #at for the
+  # query interface. This is strongly recommended over using the built in method
+  # accessors (a method isn't defined if a given field isn't extracted, so
+  # you're going to have to catch a lot of potential errors).
   class Node::Extracted < Node
     attr_accessor :tokenstream, :structure_node
 
@@ -13,7 +16,7 @@ module Ariel
       @tokenstream=tokenstream
     end
 
-    # Returns the text contained in the extracted nodes TokenStream.
+    # Returns the text contained in the TokenStream.
     def extracted_text
       tokenstream.text
     end
@@ -71,6 +74,8 @@ module Ariel
     end
     alias :/ :search
 
+    # Acts exactly like #search, but returns only the first match or nil if
+    # there are no matches.
     def at(search_string)
       self.search(search_string).first
     end

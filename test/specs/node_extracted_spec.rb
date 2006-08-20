@@ -1,5 +1,4 @@
 require 'ariel'
-require 'breakpoint'
 
 context "A new Node::Extracted" do
   setup do

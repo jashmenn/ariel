@@ -186,5 +186,9 @@ module Ariel
       end
       token_locs.sort_by {|token_loc| (label_index-token_loc).abs}.first
     end
+
+    def self.clear_cache
+      @@cache.clear
+    end
   end
 end

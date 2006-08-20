@@ -1,7 +1,6 @@
 require 'ariel'
 require 'fixtures'
 include Fixtures
-require 'breakpoint'
 
 context "Querying LabelUtils for label tag locating Regular Expressions" do
   specify "label_regex should return an array of two Regexp to locate a start tag or an end tag with the given tag contents" do

@@ -3,7 +3,6 @@
 require 'optparse'
 require 'yaml'
 
-require 'breakpoint'
 options = {}
 
 OptionParser.new do |opts|

@@ -1,5 +1,4 @@
 module Ariel
-  require 'breakpoint'
   
   # Provides methods that read an example document, using a Node::Structure tree
   # to populate a tree of Nodes with each labeled example.
@@ -7,6 +6,11 @@ module Ariel
 
     class << self
 
+      # As its first argument it takes a root Node::Structure to which any
+      # learnt rules will be added. The following arguments are strings
+      # containing labeled examples for members of the passed Node::Structure
+      # tree. Ariel#learn is the preferred interface for rule-learning - this
+      # one may change.
       def supervise_learning(structure, *labeled_strings)
         raise ArgumentError, "No labeled strings were given" if labeled_strings.size==0
         loaded_example_hash=process_labeled_strings(structure, *labeled_strings)

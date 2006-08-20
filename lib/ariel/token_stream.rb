@@ -129,7 +129,7 @@ module Ariel
       end
     end
 
-    # Returns all text represented by the instance's stored tokens it will not
+    # Returns all text represented by the instance's stored tokens. It will not
     # strip label tags even if the stream is marked to contain them. However,
     # you should not expect to get the raw_text once any label_tags have been
     # filtered (TokenStream#remove_label_tags).

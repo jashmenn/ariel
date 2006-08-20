@@ -1,6 +1,6 @@
 module Ariel
 
-  # A set of methods for use when dealing with strings from labeled documents
+  # A set of methods for use when dealing with strings from labeled documents.
   module LabelUtils
     S_LABEL="<"
     E_LABEL=">"

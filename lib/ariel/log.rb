@@ -5,12 +5,13 @@ module Ariel
   # Very simple Log class. By default outputs to stdout and ignored messages
   # below :info level. Should probably get rid of the usage of Singleton as it's
   # used very little, with the classes eigenclass/singleton class used mostly
-  # for the same purpose.
+  # for the same purpose. Use Log.set_level to lower/raise the logging level.
   class Log
     include Singleton
 
     SEVERITY={:debug=>0, :info=>1, :warn=>2, :error=>3}
 
+    # Level defaults to :debug if $DEBUG is set and :info if not.
     def initialize
       self.class.output_to_stdout
       if $DEBUG
@@ -25,6 +26,7 @@ module Ariel
         define_method(level) {|message| instance; log message, level}
       end
 
+      # Set the log level to the given key from the SEVERITY constant.
       def set_level(level)
         if SEVERITY.has_key? level
           @log_level=level
@@ -41,10 +43,13 @@ module Ariel
         @output=:stdout
       end
 
+      # Sends all output to a file called debug.log in the current directory.
       def output_to_file
         @output=:file
       end
 
+      # Not intended to be used directly, preferred to use the methods
+      # corresponding to different serverity levels.
       def log(message, level)
         if SEVERITY[@log_level] <= SEVERITY[level]
           message = "#{level}: #{message}"

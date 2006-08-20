@@ -16,8 +16,8 @@ module Ariel
 
     # Used to extend an already created Node. e.g.
     #  node.extend_structure do |r|
-    #    r.new_field1
-    #    r.new_field2
+    #    r.item :new_field1
+    #    r.item :new_field2
     #  end
     def extend_structure(&block)
       yield self if block_given?
@@ -44,7 +44,7 @@ module Ariel
       return extractions
     end
 
-    # Applies the extraction rules stored in the current StructureNode and all its
+    # Applies the extraction rules stored in the current Node::Structure and all its
     # descendant children.
     def apply_extraction_tree_on(root_node, extract_labels=false)
       extraction_queue = [root_node]
@@ -62,6 +62,18 @@ module Ariel
       return root_node
     end
 
+    # Use when defining any object that occurs once. #list is a synonym, but
+    # it's recommended you use it when defining a container for list_items. The
+    # children of a list_item are just items. e.g.
+    # <tt>structure = Ariel::Node::Structure.new do |r|
+    #   r.list :comments do |c|  # r.item :comments would be equivalent, but less readable
+    #     c.list_item :comment do |c|
+    #       c.item :author  # Now these are just normal items, as they are extracted once from their parent
+    #       c.item :date
+    #       c.item :body
+    #     end
+    #   end
+    # end
     def item(name, &block)
       self.add_child(Node::Structure.new(name, &block))
     end
@@ -69,6 +81,8 @@ module Ariel
     # people probably still prefer to call a list a list.
     alias :list :item
 
+    # See the docs for #item for a discussion of when to use #item and when to
+    # use #list_item.
     def list_item(name, &block)
       self.add_child(Node::Structure.new(name, :list_item, &block))
     end

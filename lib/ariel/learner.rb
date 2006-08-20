@@ -48,6 +48,7 @@ module Ariel
       end
 #      rule = order_rule(rule) #STALKER paper suggests that the generated rules should be ordered. This doesn't make sense, seeing as they are all generated based only on examples not matched by previous rules
       Log.debug "Generated rules: #{combined_rules.inspect}"
+      Rule.clear_cache
       return combined_rules
     end
 

@@ -36,9 +36,10 @@ module Ariel
       @start_loc <=> t.start_loc
     end
       
-    # Accepts either a string or symbol representing a wildcard in
-    # Wildcards#list. Returns true if the whole Token is consumed by the wildcard or the
-    # string is equal to Token#text, and false if the match fails. Raises an
+    # Accepts either a string a symbol representing a wildcard in
+    # Wildcards#list or an an arbitrary regex. Returns true if the
+    # whole Token is consumed by the wildcard or the string is equal
+    # to Token#text, and false if the match fails. Raises an
     # error if the passed symbol is not a member of Wildcards#list.
     def matches?(landmark)
       if landmark.kind_of? Symbol or landmark.kind_of? Regexp
@@ -65,7 +66,7 @@ module Ariel
       return Wildcards.matching(self.text)
     end
 
-    # Redefined for caching purposes
+    # Redefined for caching purposes. This proved to be too slow.
 #    def hash
 #      [@text, @start_loc, @end_loc, @label_tag].hash
 #    end

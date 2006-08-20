@@ -1,10 +1,15 @@
 module Ariel
- 
+
+  # A generic Node object. As an end user, you have no need to use this. All
+  # children are stored in a hash. #id and #type are undefined so they can be
+  # used freely as part of a Node::Structure
   class Node
     removed_methods=[:id, :type]
     removed_methods.each {|meth| undef_method meth}
     attr_accessor :parent, :children, :node_name
 
+    # If the name is a string, it's converted to a symbol. If not it's just
+    # stored as is.
     def initialize(name)
       @children={}
       if name.kind_of? String
@@ -25,6 +30,7 @@ module Ariel
       meta.send(:define_method, node.node_name.to_s.to_sym) {@children[node.node_name]}
     end
 
+    # Yields each descendant node. If passed true will also yield itself.
     def each_descendant(include_self=false)
       if include_self
         node_queue=[self]
