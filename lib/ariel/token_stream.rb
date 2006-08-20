@@ -152,7 +152,7 @@ module Ariel
       end
     end
     
-    # Return to the beginning of the TokenStream.
+    # Return to the beginning of the TokenStream. Returns self.
     def rewind
       @cur_pos=0
       self

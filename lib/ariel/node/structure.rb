@@ -29,8 +29,9 @@ module Ariel
     def extract_from(node)
       extractions=[]
       i=0
+      return extractions if @ruleset.nil? #no extractions if no rule has been learnt
       @ruleset.apply_to(node.tokenstream) do |newstream|
-        if self.node_type==:list
+        if self.node_type==:list_item
           new_node_name=i
           i+=1
         else
@@ -69,7 +70,7 @@ module Ariel
     alias :list :item
 
     def list_item(name, &block)
-      self.add_child(Node::Structure.new(name, :list, &block))
+      self.add_child(Node::Structure.new(name, :list_item, &block))
     end
   end
 end

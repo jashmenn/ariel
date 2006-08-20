@@ -46,6 +46,17 @@ EOS
     end
   end
 
+  title_ruleset=Ariel::RuleSet.new [Ariel::Rule.new([[":"]], :forward)], [Ariel::Rule.new([["love", "I"]], :back)]
+  body_ruleset=Ariel::RuleSet.new [Ariel::Rule.new([["example"]], :forward)], [Ariel::Rule.new([["Comments"]], :back)]
+  c_list_ruleset=Ariel::RuleSet.new [Ariel::Rule.new([["be", "."]], :forward)], [Ariel::Rule.new([], :back)]
+  comment_ruleset=Ariel::RuleSet.new [Ariel::Rule.new([["<li>"]], :forward, true)], [Ariel::Rule.new([["</li>"]], :back, true)]
+  
+  s=@@labeled_document_with_list_structure
+  s.title.ruleset=title_ruleset
+  s.body.ruleset=body_ruleset
+  s.comment_list.ruleset=c_list_ruleset
+  s.comment_list.comment.ruleset=comment_ruleset
+
   @@labeled_addresses=Array.new(4) {Ariel::TokenStream.new}
   @@labeled_addresses[0].tokenize("513 Pico <b>Venice</b>, Phone: 1-<b>800</b>-555-1515")
   @@labeled_addresses[0].set_label_at 36

@@ -60,11 +60,12 @@ end
 
 context "Extracting labeled list items from a node" do
   setup do
+    @structure=@@labeled_document_with_list_structure
     @tokenstream=Ariel::TokenStream.new
     @tokenstream.tokenize @@labeled_document_with_list, true
     @tokenstream = @tokenstream.slice_by_token_index 39, 95
     @parent_extracted_node=Ariel::Node::Extracted.new(:comment_list, @tokenstream, @@labeled_document_with_list_structure.comment_list)
-    @result = Ariel::LabelUtils.extract_labeled_region(@@labeled_document_with_list_structure.comment_list.comment, @parent_extracted_node) 
+    @result = Ariel::LabelUtils.extract_labeled_region(@structure.comment_list.comment, @parent_extracted_node) 
   end
 
   specify "Should return an array containing each list_item" do
@@ -85,4 +86,13 @@ context "Extracting labeled list items from a node" do
     children.size.should_equal 2
     children.each {|child| @result.should_include child}
   end
+
+  specify "Should return an empty array if no list items are extracted" do
+    stream=Ariel::TokenStream.new
+    stream.tokenize "No labels here", true
+    @parent_extracted_node.tokenstream=stream
+    result = Ariel::LabelUtils.extract_labeled_region(@structure.comment_list.comment, @parent_extracted_node)
+    result.should_equal []
+  end
+
 end

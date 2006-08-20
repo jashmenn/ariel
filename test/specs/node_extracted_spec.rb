@@ -79,4 +79,13 @@ context "A Node::Extracted with children" do
     result[0].node_name.should_equal 0
   end
 
+	specify "#search should return sorted results when a wildcard is used" do
+		result=(@root/'comment_list/*').collect {|node| node.node_name}
+		result.should_equal ((0..10).to_a)
+	end
+
+	specify "#at should act like #search, but return only the first result" do
+		@root.at('comment_list/*').node_name.should_equal 0
+	end
+
 end	

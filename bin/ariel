@@ -3,6 +3,7 @@
 require 'optparse'
 require 'yaml'
 
+require 'breakpoint'
 options = {}
 
 OptionParser.new do |opts|
@@ -14,6 +15,7 @@ OptionParser.new do |opts|
   end
 
   opts.on('-d', '--dir=DIRECTORY', 'Directory to look for documents to operate on.') do |dir|
+    raise ArgumentError, "directory does not exist" unless FileTest.directory? dir
     options[:dir]=dir
   end
 
@@ -23,6 +25,11 @@ OptionParser.new do |opts|
 
   opts.on('-s', '--structure=STRUCTURE', 'YAML file in which the structure is defined') do |structure|
     options[:structure]=structure
+  end
+
+  opts.on('-o', '--output-dir=DIRECTORY', 'Directory to output to') do |dir|
+    raise ArgumentError, "directory does not exist" unless FileTest.directory? dir
+    options[:output_dir]=dir
   end
 end.parse!
 
@@ -38,21 +45,22 @@ when "learn"
     YAML.dump(structure, file)
   end
 
-  # Debugging
-  structure.each_descendant do |structure_node|
-    puts structure_node.node_name.to_s
-    puts structure_node.ruleset.to_yaml
-  end
-
 when "extract"
   extractions = Ariel.extract(structure, *files)
-  # Do whatever we should do
-  #debug
-  extractions.each do |extraction| 
-    extraction.each_descendant do |node|
-      puts "#{node.node_name}: #{node.tokenstream.text}"
+  if options[:output_dir]
+    extractions.zip(files) do |extraction, file|
+      filename=File.join(options[:output_dir], File.basename(file)+'.yaml')
+      File.open(filename, 'wb') do |f|
+        YAML.dump(extraction, f)
+      end
     end
-    puts
-   # puts root_node.to_yaml
+  else
+    puts "No --output-dir given, so printing extractions to stdout"
+    extractions.each do |extraction| 
+      extraction.each_descendant do |node|
+        puts "#{node.node_name}: #{node.tokenstream.text}"
+      end
+      puts #Blank line looks prettier
+    end
   end
 end

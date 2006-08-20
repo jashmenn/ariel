@@ -37,19 +37,19 @@ module Ariel
       tokenstream.rewind
       while start_idx = self.skip_to_label_tag(tokenstream, structure.node_name, :open)
         start_idxs << start_idx
-        break unless structure.node_type==:list
+        break unless structure.node_type==:list_item
       end
       tokenstream.rewind
       while end_idx=self.skip_to_label_tag(tokenstream, structure.node_name, :closed)
         end_idxs << (end_idx -2) #rewind to token before the label tag token
-        break unless structure.node_type==:list
+        break unless structure.node_type==:list_item
       end
       result=[]
       i=0
       start_idxs.zip(end_idxs) do |start_idx, end_idx|
         if start_idx && end_idx && (start_idx <= end_idx)
           newstream=tokenstream.slice_by_token_index(start_idx, end_idx)
-          if structure.node_type==:list
+          if structure.node_type==:list_item
             new_name="#{structure.node_name}_#{i}"
             i+=1
           else

@@ -120,3 +120,17 @@ context "A TokenStream instance which has tokenized unlabeled text" do
     @tokenstream.reverse.tokens[idx].should_equal @tokenstream.tokens[2]
   end
 end
+
+context "A TokenStream with multibyte characters" do
+  setup do
+    @e=0xc3.chr + 0xa9.chr
+    @tokenstream=Ariel::TokenStream.new
+    @tokenstream.tokenize "Would you like my r#{@e}sum#{@e}? Just wondering"
+  end
+
+  specify "Each token's start and end_loc should refer to the relevant slice of the original text" do
+    @tokenstream.tokens.each do |token|
+      @tokenstream.original_text[token.start_loc...token.end_loc].should_equal token.text
+    end
+  end
+end

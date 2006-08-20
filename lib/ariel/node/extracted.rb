@@ -55,7 +55,9 @@ module Ariel
       return [self] if current_term.nil? #If for some reason nothing is given in the search string
       matches=[]
       if current_term=='*'
-        matches.concat self.children.values
+				new_matches=self.children.values
+				new_matches.sort! {|a, b| a.node_name <=> b.node_name} rescue nil #is this evil?
+        matches.concat new_matches
       elsif current_term[/\d+/]==current_term
         matches << @children[current_term.to_i]
       else
@@ -72,5 +74,12 @@ module Ariel
     def at(search_string)
       self.search(search_string).first
     end
+
+		def inspect
+			[super,
+			"structure_node=#{self.structure_node.node_name.inspect};",
+			"extracted_text=\"#{text=self.extracted_text; text.size > 100 ? text[0..100]+'...' : text}\";"
+			].join ' '
+		end
   end
 end

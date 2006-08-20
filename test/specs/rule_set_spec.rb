@@ -30,6 +30,12 @@ context "A RuleSet of non-exhaustive rules" do
     result[0].tokens.first.text.should_equal "and"
     result[0].tokens.last.text.should_equal "and"
   end
+
+  specify "Should return an empty array if there are no matches" do
+    stream=Ariel::TokenStream.new
+    stream.tokenize "Will not match"
+    (@ruleset.apply_to stream).should_equal []
+  end
 end
 
 context "A RuleSet of exhaustive rules" do
@@ -52,7 +58,7 @@ EOS
   end
 end
 
-context "Applying exhaustive rules to a document where the location of the first end_match is before the first start match" do
+context "A RuleSet of exhaustive rules" do
   setup do
     @tokenstream=Ariel::TokenStream.new
     @tokenstream.tokenize @@unlabeled_restaurant_example
@@ -62,12 +68,18 @@ context "Applying exhaustive rules to a document where the location of the first
     @ruleset=Ariel::RuleSet.new [@frule], [@brule]
   end
 
-  specify "Should return correct matches" do
+  specify "Should extract a tokenstream when the first end match is before the first start match" do
     result=@ruleset.apply_to @tokenstream
     result.size.should_equal 3
     result[0].tokens.first.text.should_equal "4000"
     result[1].tokens.first.text.should_equal "523"
     result[2].tokens.first.text.should_equal "403"
+  end
+
+  specify "Should return an empty array if there are no matches" do
+    stream=Ariel::TokenStream.new
+    stream.tokenize "Will not match"
+    (@ruleset.apply_to stream).should_equal []
   end
 end
 

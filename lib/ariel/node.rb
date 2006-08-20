@@ -36,5 +36,11 @@ module Ariel
         yield node_queue.shift
       end
     end
+
+    def inspect
+      ["#{self.class.name} - node_name=#{self.node_name.inspect};",
+			 "parent=#{self.parent ? self.parent.node_name.inspect : nil.inspect };",
+			 "children=#{self.children.keys.inspect};"].join ' '
+    end
   end
 end

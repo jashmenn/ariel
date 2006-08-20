@@ -37,7 +37,7 @@ module Ariel
 
     # Returns a rule that contains a given range of 
     def partial(range)
-      return Rule.new(@direction, @landmarks[range])
+      return Rule.new(@landmarks[range], @direction)
     end
 
     def deep_clone
