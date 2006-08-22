@@ -1,98 +1,64 @@
-= Ariel release 0.0.1
+= Ariel release 0.1.0
+
+== About - Ariel: A Ruby Information Extraction Library
+Ariel is a library that allows you to extract information from semi-structured
+documents (such as websites). It is different to existing tools because rather
+than expecting the developer to write rules to extract the desired information,
+Ariel will use a small number of labeled examples to generate and learn
+effective extraction rules. It is developed by Alex Bradbury and released under
+the MIT license. Ariel was started as a Google Summer of Code project mentored
+by Austin Ziegler in 2006.
 
 == Install
 gem install ariel
 
 == Announcement
-This is the first public release of Ariel - A Ruby Information Extraction
-Library. See my previous post, ruby-talk:200140[http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/200140]
-for more background information. This release supports defining a tree document
-structure and learning rules to extract each node of this true. Handling of list
-extraction and learning is not yet implemented, and is the next immediate
-priority. See the examples directory included in this release and below for
-discussion of the included examples. Rule learning is functional, and appears to
-work well, but many refinements are possible. Look out for more updates and a
-new releases shortly.
 
-== About Ariel
-Ariel intends to assist in extracting information from semi-structured
-documents including (but not in any way limited to) web pages. Although you
-may use libraries such as Hpricot or Rubyful Soup, or even plain Regular
-Expressions to achieve the same goal, Ariel approaches the problem very
-differently. Ariel relies on the user labeling examples of the data they
-want to extract, and then finds patterns across several such labeled
-examples in order to produce a set of general rules for extracting this
-information from any similar document. It uses the MIT license.
+I'm happy to announce the release of Ariel 0.1.0, the result of my Summer of
+Code work. This release should be easy to use, very functional, and hopefully
+useful - so it's worth trying out. I've put a lot of effort in to writing clear
+and straightforward documentation to get your started, so take a look at the
+docs available at http://ariel.rubyforge.org. In particular, flick through the
+tutorial and quick start guide. If you're interested, you may also want to take
+a look at the theory page where I've made a good start on describing the method
+Ariel uses to learn extraction rules. If you have any problems or find any bugs,
+just send me an email or add it to the issue tracker (see link below). Enjoy.
+See the FAQ for a vim snippet to make labeling examples a little easier.
 
-== Examples
-This release includes two examples in the example directory (which should now
-be in the directory to which rubygems installed ariel). The first is the
-google_calculator directory (inspired by Justin Bailey's post to my Ariel
-progress report). The structure is very simple, a calculation is extracted from
-the page, and then the actual result is extracted from that calculation. 3
-labeled examples are included. Ariel reads each of these, tokenizes them,
-and extracts each label. 4 sets of rules are learnt:
-1. Rules to locate the start of the calculation in the original document.
-2. Rules to locate the end of the calculation in the original document (applied
-   from the end of the document).
-3. Rules to locate the start of the result of the calculation from the
-   extracted calculation.
-4. Rules to locate the end of the result of the calculation from the extracted
-   calculation (applied from the end of the calculation).
+== Quickstart/Basic usage
 
-Take note of 3 and 4 - this is the advantage of treating a document as a tree in
-this way. Deeply nested elements can be located by generating a series of simple
-rules, rather than generating a rule with complexity that increases at each
-level. Sets of rules are generated because it may not be possible to generate a
-single rule that will catch all cases. A rule is found that matches as many of
-the examples as possible (and fails on the rest), these examples are then removed
-and a rule is found that will match as many of the remaining examples and so on.
-When it comes to applying these learnt rules, the rules are applied in order
-until there is a rule that matches.
+* @require 'ariel'@
+* Define a structure for the information you wish to extract: 
+    structure = Ariel::Node::Structure.new do |r|
+      r.item :title
+      r.item :body
+      r.list :comments do |c|
+        c.list_item :comment do |d|
+          d.item :author
+          d.item :body
+        end
+      end
+     end
+* Collect a few examples of the sort of document you wish to extract information
+  from (pages from the same website for instance).
+* Label each example with tags such as <l:title>, <l:comment> and so on in the
+  relevant places.
+*  Ariel.learn structure, labeled_file1, labeled_file2, labeled_file3
+* Find the documents you want to extract information from.
+*  extractions = Ariel.extract structure, unlabeled_file1,
+  unlabeled_file2
+*  extractions[0].search('comments/*/body').each {|e| puts e.extracted_text} =>
+  "Great stuff, loving it", "I love life", .....
+*  extractions[0].at('comments/34') => nil</tt> (there is no 34th comment, #at
+  returns the first result rather than an array of matches).
 
-To see this example for yourself just execute structure.rb in the
-examples/google_calculator directory to create a locally writable
-structure.yaml. Then do:
-  ariel -D -m learn -s structure.yaml -d /path/to/examples/google_calculator/labeled
-
-You'll have to wait a while (see my note about performance below). At the end,
-the learnt rules will be printed in YAML format, and structure.yaml will be
-updated to include these rules. Apply these learnt rules to some unlabeled
-documents by doing:
-  ariel -D -m extract -s structure.yaml -d /path/to/examples/google_calculator/unlabeled
-
-You should see the results of a successful extraction printed to your terminal,
-such as this one:
-
-  Results for unlabeled/2:
-  calculation: 3.5 U.S. dollars = 1.8486241 British pounds
-  result: 1.8486241 British pounds
-
-The second example (raa) learns rules using just 2 labeled examples. This is probably
-fewer than I'd recommend in most cases, but as it works... This example consists
-of project entries in the Ruby Application Archive. The structure of the page is
-very flat, so all rules are applied to the full page. Rules are learnt and
-applied as shown above. The structure.yaml files included in the examples
-directories already include rules generated by Ariel, use these if you just want
-to see extraction working.
-
-Note: The interface demonstrated by ariel above is not very flexible or
-friendly, it's just to serve as a demonstration for the moment.
-
-== Performance
-Generating rules takes quite a long time. It is always going to be an intensive
-operation, but there are some very simple and obvious improvements in efficiency
-that can be made. For a start, the rule candidate refining process currently
-re-applies the same rules over and over every time the remaining rule candidates
-are ranked. This is where most time is spent, and caching these should make a
-big difference. This will definitely be implemented. Other performance
-enhancements are bound to be there, but my focus at this time is to get
-something that works.
 
 == Credits
 Ariel is developed by Alex Bradbury as a Google Summer of Code project under the
 mentoring of Austin Ziegler.
 
 == Links
-Watch my development through the subversion repository at http://rubyforge.org/projects/ariel
-I've also just started using the tracker at http://code.google.com/p/ariel/
+SVN Repository: http://rubyforge.org/projects/ariel
+Issue tracker: http://code.google.com/p/ariel/issues/
+Documentation/homepage: http://ariel.rubyforge.org
+RDoc: http://ariel.rubyforge.org/rdoc/
