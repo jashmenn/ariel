@@ -1,0 +1,52 @@
+a {
+	color: #34a;
+}
+
+h1, h2, h3 {
+	font-family: arial, trebuchet ms;
+}
+h1 {
+	color: #333;
+}
+
+h2 {
+	color: #333;
+	margin-bottom: -0.5em;
+	font-size: 1em;
+}
+
+h3 {
+	clear: left;
+	color: #555;
+	border-top: thin solid #999;
+	padding-top: 6px;
+}
+body {
+	color: #111;
+}
+
+img {
+  border: 0px;
+}
+
+#wrapper {
+  width: 100%;
+  min-width: 60em;
+}
+
+#content {
+  width: 43em;
+  float: left;
+  margin-top: 0em;
+}
+
+#sidebar {
+  width: 12em;
+  float: left;
+  margin: 0.0em;
+  margin-top: 5em;
+  margin-right: 2em;
+  padding-right: 1em;
+  background: #ffffe9;
+  border: 1px solid #e7e8ac;
+}

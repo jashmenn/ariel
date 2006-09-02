@@ -1,0 +1,157 @@
+---
+title: Tutorial
+inMenu: true
+---
+
+This tutorial should hopefully be all you need to get going with Ariel and use
+it for your own extractions. The files I'm using can be found in the @examples/@
+subdirectory of the Ariel distribution, which should be wherever Rubygems
+installs your gems to on your system.
+
+h2. Step 1: Defining the document's structure
+
+In this example, we'll be creating a wrapper for the project information pages
+on the "Ruby Application Archive":http://raa.ruby-lang.org/. Ariel learns rules
+which are applied in a tree structure, that mirrors the structure of the
+original page. Taking an "example
+page":http://raa.ruby-lang.org/project/mongrel/, to extract a single piece of
+past version information, we would first define a list - version_history, that
+has the child version, a list item. We could in turn extract the version
+number and date from these items if we wished. The project page's structure
+could be described as below:
+
+<pre>
+structure = Ariel::Node::Structure.new do |r|
+  r.item :name
+  r.item :current_version
+  r.item :short_description
+  r.item :category
+  r.item :owner
+  r.item :homepage
+  r.item :license
+  r.list :version_history do |v|
+    v.list_item :version
+  end
+end
+</pre>
+
+Note, I chose not to extract all the fields from the page. Feel free to
+experiment in extending this structure definition to cover every field you hope
+to extract. Rules will be learnt to extract each of the fields defined above,
+but first we'll have to provide Ariel with some labeled examples.
+
+h2. Step 2: Labeling example documents
+
+The next step is to retrieve some examples, and label them. How many labeled
+examples you'll need depends on how regular the documents you'll be extracting
+from are, their complexity, and probably a number of other factors. For this
+example I've found two labeled documents to be sufficient, but I'd generally
+recommend trying 3, and then more if necessary.
+
+I chose to label the "Highline":http://raa.ruby-lang.org/project/highline/ and
+"Mongrel":http://raa.ruby-lang.org/project/mongrel/ project descriptions. Labels
+in Ariel take the form of @<l:node_name>....</l:node_name>@. Try to be consistent
+in what you include in your labels (surrounding HTML tags for instance). If one
+of your defined fields doesn't exist in a given document, that's no problem.
+Just remember that Ariel will need to see at least a couple of examples of that
+field in use in order to have a good chance of learning accurate rules for it. I
+labeled the :version_history list and :version children as below:
+
+<pre>
+<l:version_history>[<a
+href="project/highline/1.2.0"><l:version>1.2.0</l:version></a> (2006-03-23)]
+
+  [<a href="project/highline/1.0.2">1.0.2</a> (2006-02-20)]
+
+  [<a href="project/highline/1.0.1"><l:version>1.0.1</l:version></a> (2005-07-07)]
+
+  [<a href="project/highline/1.0.0">1.0.0</a> (2005-07-07)]
+
+  [<a href="project/highline/0.6.1"><l:version>0.6.1</l:version></a> (2005-05-26)]
+
+  [<a href="project/highline/0.6.0"><l:version>0.6.0</l:version></a>
+  (2005-05-21)]</l:version_history>
+</pre>
+
+Note that I didn't label every list item, that's no problem. The more labeled
+examples the better, but Ariel can happily deal with some list items remaining
+unlabeled.
+
+h2. Step 3: Initiating rule learning
+
+Ariel has two interfaces you may find useful for learning rules - the ariel
+script (that hopefully Rubygems has placed in your path) and the library
+interface, which is most suitable for using Ariel within your own code. Both are
+very easy to use.
+
+To use the command line interface you'll need to have a stored YAML version of
+the document structure we defined earlier on. This will do the trick:
+
+<pre>
+File.open('structure.yaml', 'wb') do |file|
+  YAML.dump structure, file
+end
+</pre>
+
+Save your labeled examples to their own directory, and @ariel -m learn -d
+/path/to/labeled_examples -s /path/to/structure.yaml@ should initiate the
+process.
+
+To use the ruby interface, assuming that structure is set to the Node::Structure
+defined above:
+
+<pre>
+Ariel.learn(structure, *Dir['/path/to/labeled_examples'])
+</pre>
+
+For all arguments after it's first, Ariel#learn will accept either strings
+(for which it will try to open and read a file) or any object that responds to
+#read. Both approaches store the learnt rules in the nodes of the structure
+tree. The command line interface will modify the passed .yaml file, if you want
+to save learnt rules and are using the ruby interface you must use YAML to dump
+the structure tree, or some other persistence system. As Ariel is learning the
+rules, you should see some progress information on standard out.
+
+h2. Step 4: Applying the learnt rules
+
+Now that the hard work of rule learning has been dealt with, the results can be
+enjoyed. 
+
+<pre>
+require 'open-uri'
+extractions=Ariel.extract structure, open('http://raa.ruby-lang.org/project/pdf-writer/')
+</pre>
+
+Note that Ariel#extract treats its arguments in the same way as Ariel#learn. It
+returns an array of any and all trees of extracted data. This can be queried
+through methods corresponding to the names of each part of the document
+structure, or using query methods such as #search (or it's synonym #/) and #at
+(which only returns the first match):
+
+<pre>
+e=extractions.first
+e.name.extracted_text  # => "pdf-writer"
+e.children[:homepage].extracted_text  # => "http://ruby-pdf.rubyforge.org/pdf-writer/"
+e.at('version_history/1').extracted_text  # => "1.1.2"
+(e/'version_history/*').each {|node| p node.extracted_text}  # => "1.1.3",
+"1.1.2", "1.1.1" .....
+</pre>
+
+You can also use the command line interface for extraction, although it is
+perhaps less useful than when used for rule learning. Put the files you want to
+extract from in their own directory and try @ariel -m extract -d
+/path/to/files_to_extract -o /path/to/output_dir -s structure.yaml@. The result
+of extracting each file will be written to the output directory,
+@pdf-writer.html@
+-> @pdf-writer.html.yaml@. You'll probably want to use @Ariel.extract@ rather
+than this command line interface when applying learnt rules.
+
+h2. Finish
+
+That's it, we've now generated a wrapper for the RAA project description pages.
+The rules can't be guaranteed to work on any project description page, it
+depends somewhat what examples you used - Ariel tries to find elements common to
+all the given examples, which are in theory therefore part of the document
+structure. However, sometimes it might make the wrong choice. The answer is this
+is to take more care in choosing documents to label, or to label more. Any
+further questions, don't hesitate to contact me.

@@ -1,0 +1,4 @@
+
+task :upload_site do |t|
+  sh %{webgen; scp -r output/* asb@rubyforge.org:/var/www/gforge-projects/ariel/;}
+end

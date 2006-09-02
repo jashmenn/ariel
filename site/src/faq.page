@@ -1,0 +1,119 @@
+---
+title: FAQ
+inMenu: true
+---
+
+h2. So is Ariel really better than
+"Hpricot":http://code.whytheluckystiff.net/hpricot/,
+"WWW::Mechanize":http://mechanize.rubyforge.org/,
+"RubyfulSoup":http://www.crummy.com/software/RubyfulSoup/ or even hand-coded
+Regexp?
+
+I would never make that claim. I hope to provide yet another tool for
+the often complicated task of information extraction. I take an approach that I
+don't believe has been explored thoroughly in any widely available Free Software
+tool or library. Read the "theory":theory.html page for an insight in to how
+Ariel differs to these existing approaches. It's also important to remember that
+these tools don't have to be used instead of each other, you're free to do part
+of the task in hpricot, and then extract the next bit using Ariel or a
+hand-coded Regexp. On a final note, although it's easy to compare Ariel to tools
+for extracting information from (X)HTML, Ariel is in no way limited to this
+application. In fact, Ariel knows nothing of any sort of HTML or XML variant, it
+just tries to find rules that hopefully work using the underlying structure of a
+given document, whatever structure that document takes. To reiterate, Ariel will
+work for any sort of semi-structured document.
+
+h2. Is Ariel an acronym or what, shouldn't you refer to it as ARIEL?
+
+Yes, Ariel is an acronym - A Ruby Information Extraction Library. I choose not
+to capitalise it when writing about it, it looks too ugly. I can't stop you
+calling it ARIEL, but I'd rather you didn't.
+
+h2. Isn't Ariel a bit slow?
+
+I think it would be hard to find a realistic example where using Ariel to
+generate rules automatically is slower than hand-coding the necessary code. Rule
+learning speed increased dramatically after the 0.0.1 (first) release, although
+little effort has been taken to optimise the process. I haven't had any
+complaints about speed, I just wanted to take this opportunity to say that Ariel
+will prefer learnt rule quality over speed enhancements almost every time.
+
+h2. How many training examples should I use?
+
+This is a topic I haven't investigated thoroughly, and the answer is going to
+depend a lot on the documents you're dealing with. Using a single example is
+never going to be wise, I'd normally start off trying 3, although you may have
+some success with 2 depending on the documents. If your document set has a
+structure that varies a lot, be sure to pick a variety of documents so Ariel can
+learn rules that deal with each different situation.
+
+h2. How can I save learnt rules?
+
+Rules are stored in Ariel::Node::Structure trees. These can be safely dumped to
+YAML, or Marshaled if you wish. Any other Object Persistence solution should
+also work fine.
+
+h2. Is there a list of similar projects somewhere?
+
+Check it out in the sidebar, I personally find it very useful when software
+authors take the time to point to projects that might have similar aims or
+functionalities to their own, so I've tried to provide that same service. If you
+know of any others to add to the list, just drop me an email.
+
+h2. How can I contact you?
+
+asbradbury@gmail.com
+
+h2. How can I make labeling documents more convenient?
+
+You can put this snippet in your .vimrc, slightly modified from "Vim tip
+346":http://www.vim.org/tips/tip.php?tip_id=346:
+
+<pre>
+nmap ,,, viw,,,
+vnoremap ,,, <Esc>:call TagSelection()<CR> 
+
+function! TagSelection()
+  let oldpaste = &paste
+  if exists("b:tag")
+  else  
+    let b:tag = ""
+  endif
+  let b:tag = input("Tag name? ", b:tag)
+  " Turn on paste mode to avoid autoidenting messing with our positions
+  set paste
+  let start = substitute( b:tag, '[ \t"]*\(\<.*\)', '<\1>', "" )
+  " Strip off all but the first word in the tag for the end tag
+  let end   = substitute( b:tag, '[ \t"]*\(\<\S*\>\).*', '<\/\1>', "" )
+  exec "normal `>a" . end
+  exec "normal `<i" . start
+  " Restore autoindent
+  if ! oldpaste
+    set nopaste
+  endif
+endfunction
+</pre>
+
+Just select a block of text in visual mode and press @,,,@ (three commas). Type
+in the tag name (e.g. @l:title@) and it will enclose that block in the given
+tag. This function is generally useful for inserting HTML/XML tags, attributes
+are automatically stripped when inserting the end tag. I didn't write this, I
+just modified it to remember the last input. It would perhaps be better to have
+one mapping to insert the last input and another that just asks for a new one.
+
+h2. I'm interested in this field, can you give me any pointers to relevant
+papers?
+
+Sorry I haven't taken the time to annotate all of these yet.
+
+* http://citeseer.ist.psu.edu/muslea01hierarchical.html
+* www.ke.informatik.tu-darmstadt.de/events/ECML-PKDD-04-WS/Proceedings/pappa.pdf
+  - the introductory section gives a great overview and explanation of various
+    conventional approaches to rule learning.
+* http://citeseer.ist.psu.edu/26490.html
+* http://citeseer.ist.psu.edu/kushmerick97wrapper.html and
+  http://citeseer.ist.psu.edu/freitag00boosted.html - massively referenced, but
+  scary in its complexity.
+* http://citeseer.ist.psu.edu/hsu98initial.html and http://citeseer.ist.psu.edu/hsu98generating.html
+* http://citeseer.ist.psu.edu/eikvil99information.html - a great survey of a
+  variety of systems and algorithms.

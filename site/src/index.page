@@ -1,0 +1,44 @@
+---
+title: About
+inMenu: true
+---
+h2. Ariel - A Ruby Information Extraction Library
+
+Ariel is a library that allows you to extract information from semi-structured
+documents (such as websites). It is different to existing tools because rather
+than expecting the developer to write rules to extract the desired information,
+Ariel will use a small number of labeled examples to generate and learn
+effective extraction rules. It is developed by Alex Bradbury and released under
+the MIT license. Ariel was started as a Google Summer of Code project mentored
+by Austin Ziegler in 2006.
+
+h2. Installation
+
+@gem install ariel@
+
+h2. Quick start/Basic usage
+
+* @require 'ariel'@
+* Define a structure for the information you wish to extract: <pre>
+structure = Ariel::Node::Structure.new do |r|
+  r.item :title
+  r.item :body
+  r.list :comments do |c|
+    c.list_item :comment do |d|
+      d.item :author
+      d.item :body
+    end
+  end
+end
+</pre>
+* Collect a few examples of the sort of document you wish to extract information
+  from (pages from the same website for instance).
+* Label each example with tags such as @<l:title>@, @<l:comment>@ and so on in the
+  relevant places.
+* @Ariel.learn structure, labeled_file1, labeled_file2, labeled_file3@
+* Find the documents you want to extract information from.
+* @extractions = Ariel.extract structure, unlabeled_file1, unlabeled_file2@
+* <code>extractions[0].search('comments/*/body').each {|e| puts e.extracted_text} =>
+  "Great stuff, loving it", "I love life", .....</code>
+* @extractions[0].at('comments/34') => nil@ (there is no 34th comment, #at
+  returns the first result rather than an array of matches).

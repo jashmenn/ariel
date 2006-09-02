@@ -1,0 +1,168 @@
+---
+title: Theory
+inMenu: true
+---
+h2. Inspiration
+
+I've taken hints from a variety of sources, but "this
+paper":http://citeseer.ist.psu.edu/muslea01hierarchical.html is a key starting
+point for the implementation of Ariel.
+
+h2. Document structure
+
+Ariel is different to some other approaches to rule learning for information
+extraction in that it treats the structure of a given document as a tree. To see
+the way a document can be described in a tree structure, we shall consider the
+"Ruby Central":http://www.rubycentral.org homepage, which I'm sad to say that at
+the time of writing lacks an RSS feed.
+
+!images/rubycentral_small.png(Ruby Central Inc, home
+page)!:images/rubycentral_large.png
+
+The following structure could describe the above document:
+
+!images/rubycentral_structure.png(A tree diagram representing the structure of the
+document referenced above)!
+
+In code, this would be written as: 
+
+<pre>
+structure = Ariel::Node::Structure.new do |r|
+  r.list :news_items do |n|
+    n.list_item :news_item do |i|
+      i.item :title
+      i.item :date
+      i.item :content
+    end
+  end
+end
+</pre>
+
+First, the whole list is extracted from the document. The next step is to apply
+a rule to extract each list item from the list. The advantages of the approach
+are already clear - two simpler rules are used instead of a single complicated
+rule. The rule to extract list items only operates on the list already
+extracted. In turn, rules to extract the title, date, and content are applied to
+each of the extracted news items. If one of the nodes doesn't exist in the given
+document, or appears in a different order the extraction should be unaffected
+(depending on the quality of the rule used).
+
+The rules to extract each node from its parent are relatively simple, and
+therefore easy to learn, and easily human editable. The form these rules take,
+and the way they are applied is discussed in the next section.
+
+h2. Rules
+
+In order to understand rules, you must first be aware of the way Ariel views a
+document. Some approaches to information extraction require the ability to
+correctly parse the document somehow - to process it as either html or xml.
+Ariel just splits a document in to a number of separate tokens. By Ariel's
+default tokenization rules, a phrase such as <code>"This is the 2nd <b>best</b> day
+ever"</code> would be split in to @This@, @is@, @the@, @2@, @nd@, @<b>@, @best@,
+@</b>@, @day@, @ever@.
+
+In Ariel, a rule is said to be composed of one or more landmarks. A landmark
+could be something such as a bold tag, @<b>@. A landmark may itself be composed of
+several 'features', for instance a html tag followed by a colon. Each feature
+corresponds to a single token in the document (it is impossible to, for
+instance, match half a token). Consider the following document:
+
+<pre>
+<b>Title</b>: An example to demonstrate rule application
+<b>Excerpt</b>: <i>Many different rules are possible to locate the same
+position.</i>
+</pre>
+
+A rule must _consume_ every token up to the point we want to extract. In order
+to extract any single field from a document two rules are used. One rule locates
+the beginning of the field (start rule) and another locates the end (end rule).
+Currently, the start rule is always applied from the beginning of the document
+and the end rule is always applied from the end. In order to locate the
+beginning of the title, the rule must clearly end in something that will consume
+the @:@. This could be a wildcard, such as the @:punctuation@ wildcard. In fact,
+a rule consisting of a single landmark, @":"@ would be sufficient to locate the
+start of the title in the above document. The wildcard @:punctuation@ could also
+be used instead of the specific landmark. You don't need to manually create
+rules in Ariel, but the code to define the above rules would be:
+
+<pre>Ariel::Rule.new [[":"]], :forward
+Ariel::Rule.new [[:punctuation]], :forward
+</pre>
+
+First, the Ariel::Rule constructor is given an array of landmarks. Each landmark
+is itself represented by an array, containing each feature that makes up the
+landmark. In the examples above, there is a single landmark containing a single
+feature. The second argument the direction of the rule, whether it is applied
+from the start of the document (as above) or the back. Clearly the examples
+above would make poor rules, they're likely to match incorrectly when applied
+to a different document. An alternative might be @Ariel::Rule.new [["Title"],
+[":"]], :forward@. This rule consists of two single feature landmarks. When
+applying this rule, Ariel will first search for a token consisting of the text
+@"Title"@. It will then search every token after this point, and move to the first
+one that consists of the text <code>":"</code>. An alternative might be a rule
+with a single landmark, but multiple features. A very specific rule could be
+@Aruel::Rule.new [["<b>", "Title", "</b>", ":"]], :forward@. For this landmark
+to be found, it must be found as a single block of tokens - i.e. each of the
+features must be next to each other. You might think of each landmark as meaning
+to @skip_to@ a matching group of tokens from the previous position.
+
+A back rule operates in the same manner, but from the end of the document. For
+completeness sake, a rule to locate the end of the title from the end of the
+document could be @Ariel::Rule.new [["Excerpt", "<b>"]], :back@
+
+h2. Rule learning
+
+Rule learning in Ariel is a fairly straight forward procedure. Suppose we have
+the following (somewhat contrived) examples:
+
+<pre>
+E1: version: 0.1.0
+E2: Current version (0.1.0)
+E3: Latest release: <b>0.1.0</b>
+E4: Most recent version number: <i>0.1.0</i>
+</pre>
+
+Imagine we want to generate a rule to locate the beginning of the version
+number. Ariel's first step is to decide upon a seed example - the example with
+the fewest tokens before the labeled token. In the example above, this would be
+E1. Some initial candidates are then generated. Because we know that the rule
+must consume the token prior to the labeled token, these initial candidate rules
+are @Ariel::Rule.new [[":"]], :forward@ and a similar rule for every wildcard
+that will match <code>":"</code>. Out of these initial candidates, a best
+refiner and a best solution is selected. There are a number of criteria that are
+considered in this selection, but basically a rule is a good refiner if it
+matches more examples either correctly (at the label token) or early (before the
+labeled token, if it matches early it can be further refined, if it matches
+late, after the label, there's no way to make it match earlier). The best
+solution at any given time should match the maximum number of examples either
+perfectly, or fail altogether (so a different rule can be applied).
+
+The rule given above will be chosen as the best_refiner and best_solution. The
+best_solution is then tested, if it succeeds in splitting the example set by
+matching some perfectly and failing on all of the others then the rule is added
+to the list of learnt rules, and all matched examples are deleted. A new seed
+example is then chosen from the remaining examples, and the rule learning
+process continues to repeat until all examples are covered. This is an approach
+called "Separate and conquer rule
+learning":http://citeseer.ist.psu.edu/26490.html.
+
+However, the rule chosen above will not meet the necessary criteria, as it will
+match E3 and E4 early. Therefore the best_refiner will be further refined until
+a rule is found that matches at least one existing example perfectly, and fails
+on all others. There are two ways to refine a rule:
+
+# Adding new landmarks
+# Extending existing landmarks (adding new features).
+
+Both of these techniques are used each time rule refinement takes place. By
+having an ordered list of rules to locate the start or end of a field, rule
+learning can take place successfully when there is some difference in the
+structure of the example documents. When being applied, the first rule is tried,
+and if that fails to match then the next one is applied and so on.
+
+The process for learning back rules is identical. Essentially, the list of
+tokens is just reversed.
+
+TODO: Perhaps be a bit more thorough with the explanation of rule learning, and
+explain how list rules are currently implemented (hint to anyone reading,
+basically the same way as normal rules are learnt).

@@ -1,0 +1,43 @@
+---
+title: Similar Projects
+inMenu: true
+---
+
+_Note_: Although this page is titled similar projects, this naming is perhaps
+inaccurate. I aim to collect references to projects (primarily Ruby) that assist
+in the extraction of information, mostly web pages. However, Ariel is in no way
+limited to HTML extraction.
+
+h2. Ruby based tools for HTML extraction
+
+* "Hpricot":http://code.whytheluckystiff.net/hpricot/ - written by why the lucky
+  stiff. Uses a speedy html parser written in C.
+* "WWW::Mechanize":http://mechanize.rubyforge.org/ - based off the original Perl
+  module. Helps automate interaction with a website. You might find this very
+  useful to use to retrieve pages for use with Ariel. Latest development version
+  uses Hpricot under the hood.
+* "RubyfulSoup":http://www.crummy.com/software/RubyfulSoup/ - port of the Python
+  BeautifulSoup library.
+* "ScrAPI":http://rubyforge.org/projects/scrapi/ - "described at the author's
+  blog":http://blog.labnotes.org/2006/07/11/scraping-with-style-scrapi-toolkit-for-ruby/.
+* "Feedalizer":http://termos.vemod.net/feedalizer
+
+h2. Other tools
+
+* "PonyFish":http://www.ponyfish.com - an online service that has a nice
+  interface, but is very limited in that it can only learn to extract URLs. If
+  this is all you need however, it seems to work well.
+* "Dapper":http://www.dappit.com - this is another online service that's had a
+  lot of coverage recently. Does a great job of demonstrating the power of tools
+  that can learn extraction rules by example. I see no reason why a similar
+  service couldn't be created using Ariel.
+* "Webstemmer":http://www.unixuser.org/~euske/python/webstemmer/index.html - a
+  Python project that aims to automatically extract the main text from news
+  sites. The "detailed description of how it
+  works":http://www.unixuser.org/~euske/python/webstemmer/howitworks.html is
+  excellent, I highly recommend you take a look.
+* "Crawl-by-example":http://webteam.archive.org/confluence/display/SOC06/Crawl-by-example
+  - I must take a look at the work done by another student for Summer of Code
+  2006 for the Internet Archive. The ideas behind this could be useful to make
+  a companion to Ariel to automatically harvest documents to extract
+  information from.
