@@ -20,7 +20,7 @@ module Ariel
     def extracted_text
       tokenstream.text
     end
-
+    alias :to_s :extracted_text
     # Index based accessor for the Node::Extracted's children. Supports Range objects.
 		# Aims to provide behaviour that makes sense, especially when a Node has
     # list children. Node::Extracted#[0..0] will return an array, while
