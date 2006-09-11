@@ -94,8 +94,10 @@ module Ariel
         candidates.each do |candidate|
           refinements=refine(candidate)
           best_solution = get_best_solution(refinements + [best_solution])
-          break if stopping_criterion_met?(best_solution)
-          breakpoint
+          if stopping_criterion_met?(best_solution)
+            rules=[] #to exit the outer loop
+            break
+          end
           rules = refinements
         end
         rules=filter_and_sort_rules(rules)
@@ -113,12 +115,12 @@ module Ariel
     end
 
     def stopping_criterion_met?(rule)
-      return false if rule.nil? or perfect?(rule)==false
+      return false if rule.nil?
       if @exhaustive
         #criteria for stopping when finding an exhaustive rule
-        return true
+        return perfect?(rule)
       else
-        return true
+        return perfect?(rule)
       end
     end
 
@@ -139,6 +141,7 @@ module Ariel
         end
       end
       if (perfect_count >= 1) && (fail_count == (@examples.size - perfect_count))
+        Log.debug "Perfect rule found"
         return true
       else
         Log.debug "Rule was not perfect, perfect_count=#{perfect_count}, fail_count=#{fail_count}"

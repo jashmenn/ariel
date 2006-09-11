@@ -107,7 +107,7 @@ module Ariel
         level.each do |node|
           xml_parent.add_text(node.parent.original_text[last_text_pos...node.tokenstream.tokens.first.start_loc])
           el = REXML::Element.new node.structure_node.node_name.to_s
-l         if node.children.empty?
+          if node.children.empty?
             el.add_text node.to_s
           end
           mapping_hash[node.parent].add_element el
@@ -118,6 +118,7 @@ l         if node.children.empty?
         pos_of_last_string=level.last.tokenstream.tokens.last.end_loc 
         end_of_cur_level=node_parent.tokenstream.tokens.last.end_loc
         xml_parent.add_text(node_parent.original_text[pos_of_last_string..end_of_cur_level])
+      end
       return doc
     end
 
