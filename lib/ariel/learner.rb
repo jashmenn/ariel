@@ -17,7 +17,6 @@ module Ariel
       end
       Log.debug "ATTENTION: New Learner instantiated with #{examples.size} labeled examples"
       @examples=examples
-      set_seed
     end
 
     # Initiates and operates the whole rule induction process. Finds an example
