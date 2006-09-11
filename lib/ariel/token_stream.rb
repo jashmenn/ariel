@@ -1,4 +1,4 @@
-module Ariel   
+module Ariel
 
   require 'enumerator'
   
@@ -15,6 +15,7 @@ module Ariel
   # or end of the stream as required, whether it is reversed or not.
   class TokenStream
     include Enumerable
+    include Comparable
     attr_accessor :tokens, :cur_pos, :label_index, :original_text
 
     TOKEN_REGEXEN = [
@@ -168,10 +169,14 @@ module Ariel
     # Converts the given position so it points to the same token once the stream
     # is reversed. Result invalid for when @tokens.size==0
     def reverse_pos(pos)
-      @tokens.size-(pos + 1)
+      if pos==@tokens.size
+        return 0
+      else
+        return tokens.size-(pos + 1)
+      end
     end
 
-    # Same as LabeledStream#reverse, but changes are made in place.
+    # Same as TokenStream#reverse, but changes are made in place.
     def reverse!
       @tokens.reverse!
       if label_index
@@ -218,6 +223,10 @@ module Ariel
     # Returns the current Token.
     def current_token
       @tokens[@cur_pos]
+    end
+
+    def <=>(stream)
+      self.tokens.first.start_loc <=> stream.tokens.first.start_loc
     end
 
     private

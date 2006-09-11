@@ -134,3 +134,21 @@ context "A TokenStream with multibyte characters" do
     end
   end
 end
+
+context "Finding the reverse_pos for a given index" do
+  setup do
+    @t=Ariel::TokenStream.new
+    @t.tokenize 'one two three four five six seven eight nine ten'
+    @tr=@t.reverse
+  end
+
+  specify "Should properly reverse for all indexes up to when all the tokenstream has been consumed" do
+    0.upto 9 do |i|
+      @t.tokens[@t.reverse_pos(i)].should_equal @tr.tokens[i]
+    end
+  end
+
+  specify "Should properly reverse when every token has been consumed" do
+    @t.reverse_pos(10).should_equal 0
+  end
+end

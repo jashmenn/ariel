@@ -9,6 +9,7 @@ end
 Spec::Rake::SpecTask.new do |t|
   t.name = :spec_v
   t.libs << "test"
+  t.libs << "lib"
   t.spec_files = FileList['./test/specs/*_spec.rb']
   t.spec_opts=['--format', 'specdoc']
 end

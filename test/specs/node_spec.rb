@@ -73,4 +73,19 @@ context "Building a tree of Node objects" do
     results.should_include @child2
     results.should_include @child1_1
   end
+
+  specify "Should yield the children at each level when using each_level" do
+    @root_parent.add_child @child1
+    @root_parent.add_child @child2
+    @child1.add_child @child1_1
+    results=[]
+    @root_parent.each_level do |level|
+      results << [level].flatten  # works
+      p "Yielded #{level.inspect}"
+#      results << level  # doesn't work
+    end
+    results[0].size.should_equal 2
+    results[1].should_equal [@child1_1]
+    results.size.should_equal 2
+  end
 end

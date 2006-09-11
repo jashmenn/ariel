@@ -80,6 +80,7 @@ module Ariel
         token_locs=[]
         while result=seek_landmarks(target)
           token_locs << correct_match_location(tokenstream, result)
+#          assert {token_locs.last != 0}
           break unless exhaustive?
         end
         @@cache[[tokenstream.cache_hash, self.hash]]=token_locs

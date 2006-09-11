@@ -35,21 +35,21 @@ context "A Node::Extracted with children" do
 		end
 	end
 
-	specify "should provide access to the node's children through" do #[] can't be used in a spec name due to a bug
+	specify "should provide access to the node's children through #[]" do
 		@root[:comment_list].node_name.should_equal :comment_list
 		@root.comment_list[2].node_name.should_equal 2
 	end
 
-  specify "square bracket method should return an array when a Range with one member is given" do
+  specify "#[] method should return an array when a Range with one member is given" do
     @root.comment_list[0..0].should_be_a_kind_of Array
   end
 
-  specify "square bracket should return nil if no matches exist" do
+  specify "#[] should return nil if no matches exist" do
     @root[:monkey].should_be_nil
     @root[:monkey, :heaven].should_be_nil
   end
 
-  specify "square bracket should return those matches that do exist in an array even if some don't" do
+  specify "#[] should return those matches that do exist in an array even if some don't" do
     result=@root[:monkey, :title]
     result.size.should_equal 1
     result[0].node_name.should_equal :title
@@ -87,4 +87,4 @@ context "A Node::Extracted with children" do
 		@root.at('comment_list/*').node_name.should_equal 0
 	end
 
-end	
+end

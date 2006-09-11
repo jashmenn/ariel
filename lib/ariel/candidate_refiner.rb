@@ -11,6 +11,13 @@ module Ariel
       @examples=examples
     end
 
+    # Selects only those candidates that match a given example in one of the
+    # given ways (e.g. refiner.must_match seed_example, :early, :perfect).
+    def must_match(example, *types)
+      @candidates=@candidates.select {|rule| rule.matches(example, *types)}
+      return @candidates
+    end
+
     # Selects the Rule candidates that have the most matches of a given type
     # against the given examples. e.g. select_best_by_match_type(:early, :perfect)
     # will select the rules that have the most matches that are early or

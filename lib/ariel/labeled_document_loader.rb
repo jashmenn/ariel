@@ -42,6 +42,7 @@ module Ariel
       def process_labeled_strings(structure, *labeled_strings)
         loaded_example_hash = Hash.new {|h, k| h[k]=[]}
         labeled_strings.each do |string|
+          warn_if_no_examples_in string
           tokenstream = TokenStream.new
           tokenstream.tokenize(string, true)
           root = Node::Extracted.new(:root, tokenstream, structure)
@@ -70,6 +71,12 @@ module Ariel
             tokenstream.set_label_at(node.tokenstream.tokens.last.start_loc)
           end
           tokenstream
+        end
+      end
+
+      def warn_if_no_examples_in(string)
+        unless string[LabelUtils.any_label_regex]
+          Log.warn "Example beginning '#{string[0...50]}' contains no labels"
         end
       end
     end

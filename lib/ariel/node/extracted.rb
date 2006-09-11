@@ -86,5 +86,44 @@ module Ariel
 			"extracted_text=\"#{text=self.extracted_text; text.size > 100 ? text[0..100]+'...' : text}\";"
 			].join ' '
 		end
+
+    def original_text
+      self.tokenstream.original_text
+    end
+
+    # Converts the tree below and including the current node to XML.
+    def to_xml
+      require 'rexml/document'
+      doc = REXML::Document.new
+      doc << REXML::XMLDecl.default
+      root_el=REXML::Element.new self.structure_node.node_name.to_s
+      doc.add_element root_el
+      mapping_hash={self => root_el}
+      self.each_level do |level|
+        level.sort! {|a, b| a.tokenstream <=> b.tokenstream}
+        node_parent=level.first.parent  # Parent will be the same for all on this level
+        xml_parent = mapping_hash[node_parent]
+        last_text_pos = node_parent.tokenstream.tokens.first.start_loc
+        level.each do |node|
+          xml_parent.add_text(node.parent.original_text[last_text_pos...node.tokenstream.tokens.first.start_loc])
+          el = REXML::Element.new node.structure_node.node_name.to_s
+          if node.children.empty?
+            el.add_text node.to_s
+          end
+          mapping_hash[node.parent].add_element el
+          mapping_hash[node]=el
+          last_text_pos = node.tokenstream.tokens.last.end_loc
+        end
+        # Add any text at the end of the section of the document covered by this tree level
+        pos_of_last_string=level.last.tokenstream.tokens.last.end_loc 
+        end_of_cur_level=node_parent.tokenstream.tokens.last.end_loc
+        xml_parent.add_text(node_parent.original_text[pos_of_last_string..end_of_cur_level])
+      end
+      output = ""
+      doc.write output
+      return output
+    end
+
+
   end
 end

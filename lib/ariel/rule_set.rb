@@ -32,14 +32,19 @@ module Ariel
         # end rule match should be a list item
         if start_idxs.first > end_idxs.first
           start_idxs.insert(0, 0)
+          Log.debug "First start rule matched after the first end rule"
         end
         if end_idxs.last < start_idxs.last
           end_idxs << (tokenstream.size - 1)
+          Log.debug "Last end rule matches before the last start rule"
         end
         Log.debug "RuleSet matched with start_idxs=#{start_idxs.inspect} and end_idxs=#{end_idxs.inspect}"
         start_idxs.zip(end_idxs) do |start_idx, end_idx|
           if start_idx && end_idx
-            next if start_idx > end_idx
+            if start_idx > end_idx
+              Log.debug "start_idx=#{start_idx} was larger than end_idx=#{end_idx}, have to skip this pair"
+              next
+            end
             result << tokenstream.slice_by_token_index(start_idx, end_idx)
             yield result.last if block_given?
           else

@@ -43,6 +43,22 @@ module Ariel
       end
     end
 
+    def each_level(include_self=false)
+      if include_self
+        node_queue=[self]
+      else
+        node_queue=self.children.values
+      end
+      yield node_queue
+      while node_queue.any? {|node| node.children.empty? == false} do
+        node_queue.collect! {|node| node.children.values}
+        node_queue.flatten!
+        yield node_queue
+      end
+    end
+        
+
+
     def inspect
       ["#{self.class.name} - node_name=#{self.node_name.inspect};",
 			 "parent=#{self.parent ? self.parent.node_name.inspect : nil.inspect };",

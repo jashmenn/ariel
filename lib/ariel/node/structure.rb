@@ -30,6 +30,7 @@ module Ariel
       extractions=[]
       i=0
       return extractions if @ruleset.nil? #no extractions if no rule has been learnt
+      Log.debug "Applying ruleset for node #{self.node_name.inspect}"
       @ruleset.apply_to(node.tokenstream) do |newstream|
         if self.node_type==:list_item
           new_node_name=i

@@ -87,7 +87,7 @@ module Ariel
         best_refiner = get_best_refiner
         best_solution = get_best_solution
         @current_rule = best_refiner
-        break if perfect?(best_solution)
+        break if perfect?(best_solution) or best_refiner.nil?
         refine
       end
 #     return post_process(best_solution)
@@ -128,6 +128,7 @@ module Ariel
     # * longer end landmarks - prefer "local context" landmarks.
     def get_best_refiner
       r = CandidateRefiner.new(@candidates, @examples)
+      r.must_match current_seed, :early, :perfect 
       r.refine_by_match_type :early, :perfect #Discriminate on coverage
       r.refine_by_match_type :early
       r.refine_by_match_type :fail
@@ -165,6 +166,7 @@ module Ariel
     # arguments. 
     def refine
       @candidates=[]
+      p current_rule.inspect
       current_rule.landmarks.each_with_index do |landmark, index|
         add_new_landmarks(landmark, index) #Topology refinements
         lengthen_landmark(landmark, index) #Landmark refinements
@@ -228,10 +230,10 @@ module Ariel
       start_pos = current_rule.partial(0..index).closest_match(current_seed, :early)
       end_pos = current_seed.label_index #No point adding tokens that occur after the label_index
       current_seed.tokens[start_pos...end_pos].each do |token|
-          r=current_rule.deep_clone
-          r.landmarks.insert(index+1, [token.text])
-          topology_refs << r
-          topology_refs.concat r.generalise_feature(index+1)
+        r=current_rule.deep_clone
+        r.landmarks.insert(index+1, [token.text])
+        topology_refs << r
+        topology_refs.concat r.generalise_feature(index+1)
       end
     Log.debug "Topology refinements before uniq! #{topology_refs.size}"
     topology_refs.uniq!
