@@ -8,7 +8,7 @@ module Ariel
   # all generated rules is returned.
 
   class Learner
-    attr_accessor :current_rule, :current_seed, :candidates, :direction
+    attr_accessor :current_seed, :direction
     
     # Takes a list of TokenStreams containing labels.
     def initialize(*examples)
@@ -17,7 +17,6 @@ module Ariel
       end
       Log.debug "ATTENTION: New Learner instantiated with #{examples.size} labeled examples"
       @examples=examples
-      @candidates=[]
       set_seed
     end
 
@@ -36,20 +35,21 @@ module Ariel
         @examples.delete_if {|example| example_is_unsuitable?(example)}
         raise StandardError, "No examples are suitable for exhaustive rule learning" if @examples.empty?
       end
-      @current_rule=Rule.new([], direction, exhaustive)
-      combined_rules=[]
+      theory=[]
       while not @examples.empty?
-        set_seed unless @examples.include? @current_seed
-        rule = find_best_rule() # Find the rule that matches the most examples and fails on the others
+        rule = find_best_rule
+        if rule_stopping_criterion_met?(theory, rule, @examples)
+          break
+        end
         prev_size = @examples.size
         @examples.delete_if {|example| rule.apply_to(example)} #separate and conquer!
         Log.debug "Removing #{prev_size - @examples.size} examples matched by the generated rule, #{@examples.size} remain"
-        combined_rules << rule
+        theory << rule
       end
-#      rule = order_rule(rule) #STALKER paper suggests that the generated rules should be ordered. This doesn't make sense, seeing as they are all generated based only on examples not matched by previous rules
-      Log.debug "Generated rules: #{combined_rules.inspect}"
+#      theory=post_process(theory)
+      Log.debug "Generated rules: #{theory.inspect}"
       Rule.clear_cache
-      return combined_rules
+      return theory
     end
 
     # The seed example is chosen from the array of remaining examples. The
@@ -65,51 +65,65 @@ module Ariel
     # candidates for further refinement and evaluation. The Token prior to the
     # labeled token is considered, and separate rules are generated that skip_to that
     # token's text or any of it's matching wildcards.
-    def generate_initial_candidates
+    def generate_initial_rules
+      initial_rules=[]
       if current_seed.label_index==0
-        @candidates << Rule.new([], @direction, @exhaustive)
+        initial_rules << Rule.new([], @direction, @exhaustive)
       else
         end_token=current_seed.tokens[current_seed.label_index-1]
-        Log.debug "Creating initial candidates based on #{end_token.text}"
-        @candidates<< Rule.new([[end_token.text]], @direction, @exhaustive)
-        @candidates.concat(@candidates[0].generalise_feature(0))
+        Log.debug "Creating initial rules based on #{end_token.text}"
+        initial_rules << Rule.new([[end_token.text]], @direction, @exhaustive)
+        initial_rules.concat(initial_rules[0].generalise_feature(0))
         Log.debug "Initial candidates: #{@candidates.inspect} created"
       end
-      return @candidates.size
+      return initial_rules
     end
 
-    # Equivalent of LearnDisjunct in STALKER algorithm. Generates initial
-    # candidate rules, refines, and then returns a single rule.
+    # Handles the generation of initial rules, then selects some candidates 
+    # for further refinement. Each of these is refined, and the refinements 
+    # are added to the list of rules. The list of rules is filtered and 
+    # sorted, and processing continues untill a stopping criterion is met. The 
+    # best_solution is returned.
     def find_best_rule
-      @candidates=[]
-      generate_initial_candidates
-      while true
-        best_refiner = get_best_refiner
-        best_solution = get_best_solution
-        @current_rule = best_refiner
-        break if perfect?(best_solution) or best_refiner.nil?
-        refine
+      set_seed
+      rules=generate_initial_rules
+      best_solution=get_best_solution(rules)
+      while not rules.empty?
+        candidates=select_candidates(rules)
+        rules=rules - candidates
+        candidates.each do |candidate|
+          refinements=refine(candidate)
+          best_solution = get_best_solution(refinements + [best_solution])
+          break if stopping_criterion_met?(best_solution)
+          breakpoint
+          rules = refinements
+        end
+        rules=filter_and_sort_rules(rules)
       end
-      Log.debug "Rule found: #{best_solution.inspect}"
+      return best_solution
+    end
+
+    def select_candidates(rules)
+      [get_best_refiner(rules)]
+    end
+
+    # Not implemented for now
+    def rule_stopping_criterion_met?(theory, best_rule, examples)
+      false
+    end
+
+    def stopping_criterion_met?(rule)
+      return false if rule.nil? or perfect?(rule)==false
       if @exhaustive
-        Log.debug "Trying to further refine exhaustive rule"
-        return post_process(best_solution)
+        #criteria for stopping when finding an exhaustive rule
+        return true
       else
-        return best_solution
+        return true
       end
     end
 
-    def post_process(best_solution)
-      matching_examples=@examples.select {|example| best_solution.matches example, :perfect}
-      previous_solution=best_solution
-      while matching_examples.all? {|example| best_solution.matches example, :perfect}
-        @current_rule=best_solution
-        previous_solution=best_solution  # Must be ok, passed the test
-        refine
-        best_solution=get_best_solution(matching_examples)
-        break if best_solution.nil?
-      end
-      return previous_solution
+    def filter_and_sort_rules(rules)
+      return rules
     end
 
     # A given rule is perfect if it successfully matches the label on at least
@@ -143,8 +157,8 @@ module Ariel
     # * fewer tokens in SkipUntil() - huh? Perhaps because skip_until relies on slot content rather than
     #   document structure.
     # * longer end landmarks - prefer "local context" landmarks.
-    def get_best_refiner
-      r = CandidateRefiner.new(@candidates, @examples)
+    def get_best_refiner(rules)
+      r = CandidateRefiner.new(rules, @examples)
       r.must_match current_seed, :early, :perfect 
       r.refine_by_match_type :early, :perfect #Discriminate on coverage
       r.refine_by_match_type :early
@@ -164,8 +178,8 @@ module Ariel
     # * fewer wildcards
     # * longer end landmarks
     # * shorter unconsumed prefixes
-    def get_best_solution(examples=@examples)
-      r = CandidateRefiner.new(@candidates, examples)
+    def get_best_solution(rules)
+      r = CandidateRefiner.new(rules, @examples)
       r.refine_by_match_type :perfect
       r.refine_by_match_type :fail
       r.refine_by_fewer_wildcards
@@ -181,13 +195,13 @@ module Ariel
     # skip_to() commands). Takes the current rule being generated and the
     # example against which it is being created (the current seed_rule) as
     # arguments. 
-    def refine
-      @candidates=[]
-      current_rule.landmarks.each_with_index do |landmark, index|
-        add_new_landmarks(landmark, index) #Topology refinements
-        lengthen_landmark(landmark, index) #Landmark refinements
+    def refine(rule)
+      refinements=[]
+      rule.landmarks.each_with_index do |landmark, index|
+        refinements.concat add_new_landmarks(rule, landmark, index) #Topology refinements
+        refinements.concat lengthen_landmark(rule, landmark, index) #Landmark refinements
       end
-      return @candidates.size
+      return refinements
     end
 
     # Implements landmark refinements. Landmarks are lengthened to make them
@@ -202,10 +216,10 @@ module Ariel
     #   match. 
     # * Rules are generated incorporating these extended landmarks, including
     #   alternative landmark extensions that use relevant wildcards.
-    def lengthen_landmark(landmark, index)
+    def lengthen_landmark(rule, landmark, index)
       current_seed.rewind #In case apply_rule isn't called as index=0
-      result = @current_rule.partial(0..(index-1)).closest_match current_seed if index > 0 #Don't care about already matched tokens
-      return 0 unless result # Rule doesn't match, no point refining
+      result = rule.partial(0..(index-1)).closest_match current_seed if index > 0 #Don't care about already matched tokens
+      return [] unless result # Rule doesn't match, no point refining
       refined_rules=[]
       width = landmark.size
       while current_seed.skip_to(*landmark)
@@ -216,8 +230,8 @@ module Ariel
         trailing_token = current_seed.tokens[match_end+1]
         front_extended_landmark = landmark.clone.insert(0, preceding_token.text) if preceding_token
         back_extended_landmark = landmark.clone.insert(-1, trailing_token.text) if trailing_token
-        f = current_rule.deep_clone
-        b = current_rule.deep_clone
+        f = rule.deep_clone
+        b = rule.deep_clone
         f.landmarks[index] = front_extended_landmark if front_extended_landmark
         b.landmarks[index] = back_extended_landmark if back_extended_landmark
         refined_rules << f
@@ -225,9 +239,8 @@ module Ariel
         refined_rules << b
         refined_rules.concat b.generalise_feature(index, -1)
       end
-      @candidates.concat refined_rules
       Log.debug "#{refined_rules.size} landmark refinements generated"
-      return refined_rules.size
+      return refined_rules
     end
 
     # Implements topology refinements - new landmarks are added to the current rule.
@@ -241,22 +254,20 @@ module Ariel
     # * For every token in this slice of the TokenStream, a new potential rule
     #   is created by adding a new landmark consisting of that token. This
     #   is also done for each of that token's matching wildcards.
-    def add_new_landmarks(landmark, index)
+    def add_new_landmarks(rule, landmark, index)
       topology_refs=[]
-      start_pos = current_rule.partial(0..index).closest_match(current_seed, :early)
+      start_pos = rule.partial(0..index).closest_match(current_seed, :early)
       end_pos = current_seed.label_index #No point adding tokens that occur after the label_index
-      assert { not (start_pos.nil? or end_pos.nil?) }
       current_seed.tokens[start_pos...end_pos].each do |token|
-        r=current_rule.deep_clone
+        r=rule.deep_clone
         r.landmarks.insert(index+1, [token.text])
         topology_refs << r
         topology_refs.concat r.generalise_feature(index+1)
       end
-    Log.debug "Topology refinements before uniq! #{topology_refs.size}"
-    topology_refs.uniq!
-    @candidates.concat topology_refs
-    Log.debug "#{topology_refs.size} topology refinements generated"
-    return topology_refs.size
+      Log.debug "Topology refinements before uniq! #{topology_refs.size}"
+      topology_refs.uniq!
+      Log.debug "#{topology_refs.size} topology refinements generated"
+      return topology_refs
     end
 
     # When learning list iteration rules, some examples may be unsuitable. For

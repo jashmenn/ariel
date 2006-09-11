@@ -1,6 +1,5 @@
 require 'ariel'
 require 'fixtures'
-
 include Fixtures
 
 context "A non-exhaustive forward rule learner" do
@@ -18,8 +17,7 @@ context "A non-exhaustive forward rule learner" do
 
   specify "generate_initial_candidates should generate rule candidates based on the token before the label in the current_seed" do
     @learner.direction=:forward
-    @learner.generate_initial_candidates
-    c=@learner.candidates
+    c=@learner.generate_initial_rules
     c.should_include Ariel::Rule.new([["("]], :forward)
     c.should_include Ariel::Rule.new([[:anything]], :forward)
     c.should_include Ariel::Rule.new([[:punctuation]], :forward)
