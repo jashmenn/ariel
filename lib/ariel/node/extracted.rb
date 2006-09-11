@@ -91,8 +91,8 @@ module Ariel
       self.tokenstream.original_text
     end
 
-    # Converts the tree below and including the current node to XML.
-    def to_xml
+    # Converts the tree below and including the current node to a REXML::Document instance.
+    def to_rexml
       require 'rexml/document'
       doc = REXML::Document.new
       doc << REXML::XMLDecl.default
@@ -107,7 +107,7 @@ module Ariel
         level.each do |node|
           xml_parent.add_text(node.parent.original_text[last_text_pos...node.tokenstream.tokens.first.start_loc])
           el = REXML::Element.new node.structure_node.node_name.to_s
-          if node.children.empty?
+l         if node.children.empty?
             el.add_text node.to_s
           end
           mapping_hash[node.parent].add_element el
@@ -118,12 +118,14 @@ module Ariel
         pos_of_last_string=level.last.tokenstream.tokens.last.end_loc 
         end_of_cur_level=node_parent.tokenstream.tokens.last.end_loc
         xml_parent.add_text(node_parent.original_text[pos_of_last_string..end_of_cur_level])
-      end
-      output = ""
-      doc.write output
-      return output
+      return doc
     end
 
+    # Converts the tree to a string of valid XML. See also #to_rexml.
+    def to_xml
+      output=""
+      self.to_rexml.write output
+    end
 
   end
 end

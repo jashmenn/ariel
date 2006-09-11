@@ -14,7 +14,10 @@ module Ariel
     # Selects only those candidates that match a given example in one of the
     # given ways (e.g. refiner.must_match seed_example, :early, :perfect).
     def must_match(example, *types)
+      Log.debug "Removing candidates that don't match the given example"
+      before_num=@candidates.size
       @candidates=@candidates.select {|rule| rule.matches(example, *types)}
+      Log.debug "Removed #{before_num-@candidates.size}"
       return @candidates
     end
 

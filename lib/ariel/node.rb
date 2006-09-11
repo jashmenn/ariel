@@ -51,18 +51,19 @@ module Ariel
       end
       yield node_queue
       while node_queue.any? {|node| node.children.empty? == false} do
-        node_queue.collect! {|node| node.children.values}
+        # Never replace the next line with node_queue.collect!, it will modify
+        # the returned array directly and that's evil
+        node_queue = node_queue.collect {|node| node.children.values}
         node_queue.flatten!
         yield node_queue
       end
     end
-        
 
 
     def inspect
       ["#{self.class.name} - node_name=#{self.node_name.inspect};",
 			 "parent=#{self.parent ? self.parent.node_name.inspect : nil.inspect };",
-			 "children=#{self.children.keys.inspect};"].join ' '
+  		 "children=#{self.children.keys.inspect};"].join ' '
     end
   end
 end

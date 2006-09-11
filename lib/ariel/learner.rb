@@ -208,7 +208,7 @@ module Ariel
       return 0 unless result # Rule doesn't match, no point refining
       refined_rules=[]
       width = landmark.size
-      while current_seed.skip_to(*landmark) #Probably should stop when cur_pos > label_index
+      while current_seed.skip_to(*landmark)
         break if current_seed.cur_pos > current_seed.label_index
         match_start = (current_seed.cur_pos - 1) - width #pos of first matched token
         match_end = current_seed.cur_pos - 1 #pos of last matched token

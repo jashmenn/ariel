@@ -80,12 +80,40 @@ context "Building a tree of Node objects" do
     @child1.add_child @child1_1
     results=[]
     @root_parent.each_level do |level|
-      results << [level].flatten  # works
-      p "Yielded #{level.inspect}"
-#      results << level  # doesn't work
+      results << level
     end
     results[0].size.should_equal 2
     results[1].should_equal [@child1_1]
     results.size.should_equal 2
+  end
+
+  specify "#each_level should work for many levels and return the current node when include_self=true" do
+    r=Ariel::Node.new :r
+    c1=Ariel::Node.new :c1
+    c1_1=Ariel::Node.new :c1_1
+    c2=Ariel::Node.new :c2
+    c3=Ariel::Node.new :c3
+    c4=Ariel::Node.new :c4
+    c5=Ariel::Node.new :c5
+    
+    r.add_child c1
+    c1.add_child c2
+    c1.add_child c1_1
+    c2.add_child c3
+    c3.add_child c4
+    c4.add_child c5
+
+    results=[]
+    r.each_level(true) do |level|
+      results << level
+    end
+    results[0].should_equal [r]
+    results[1].should_equal [c1]
+    results[2].should_include c1_1
+    results[2].should_include c2
+    results[2].size.should_equal 2
+    results[3].should_equal [c3]
+    results[4].should_equal [c4]
+    results[5].should_equal [c5]
   end
 end
