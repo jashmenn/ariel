@@ -1,7 +1,7 @@
-- Implement a CustomTokenizer to make it easy for users to define their own tokenization rules.
 - Save tokenization rules alongside the serialized structure.
 - Generalize the rule search method to a beam search (with beam=1 by default)
 - Create a sensible stopping criterion when further refining list iteration rules.
 - When applying exhaustive rules, allow disjunctions to be used to yield the maximal number of results
 - How well would successive generalisation work?
 - Make use of multiple processors when learning rules.
+- Fix Ariel so it works when there are no Wildcards

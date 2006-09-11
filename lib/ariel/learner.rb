@@ -74,7 +74,7 @@ module Ariel
         Log.debug "Creating initial rules based on #{end_token.text}"
         initial_rules << Rule.new([[end_token.text]], @direction, @exhaustive)
         initial_rules.concat(initial_rules[0].generalise_feature(0))
-        Log.debug "Initial candidates: #{@candidates.inspect} created"
+        Log.debug "Initial candidates: #{initial_rules.inspect} created"
       end
       return initial_rules
     end
@@ -98,7 +98,7 @@ module Ariel
             rules=[] #to exit the outer loop
             break
           end
-          rules = refinements
+          rules = refinements + [best_solution]
         end
         rules=filter_and_sort_rules(rules)
       end
@@ -117,8 +117,9 @@ module Ariel
     def stopping_criterion_met?(rule)
       return false if rule.nil?
       if @exhaustive
-        #criteria for stopping when finding an exhaustive rule
-        return perfect?(rule)
+        if perfect?(rule)
+          return true
+        end
       else
         return perfect?(rule)
       end

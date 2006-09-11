@@ -140,7 +140,7 @@ module Ariel
     # corrected by correct_match_location
     def seek_landmarks(tokenstream)
       @landmarks.each do |landmark|
-        unless tokenstream.skip_to(*landmark)
+        unless tokenstream.kmp(*landmark)
           return nil
         end
       end
