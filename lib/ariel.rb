@@ -11,6 +11,7 @@ require 'ariel/candidate_refiner'
 require 'ariel/labeled_document_loader'
 require 'ariel/rule_set'
 
+require 'breakpoint'
 # = Ariel - A Ruby Information Extraction Library
 # Ariel intends to assist in extracting information from semi-structured
 # documents including (but not in any way limited to) web pages. Although you

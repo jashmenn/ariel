@@ -90,9 +90,26 @@ module Ariel
         break if perfect?(best_solution) or best_refiner.nil?
         refine
       end
-#     return post_process(best_solution)
       Log.debug "Rule found: #{best_solution.inspect}"
-      return best_solution
+      if @exhaustive
+        Log.debug "Trying to further refine exhaustive rule"
+        return post_process(best_solution)
+      else
+        return best_solution
+      end
+    end
+
+    def post_process(best_solution)
+      matching_examples=@examples.select {|example| best_solution.matches example, :perfect}
+      previous_solution=best_solution
+      while matching_examples.all? {|example| best_solution.matches example, :perfect}
+        @current_rule=best_solution
+        previous_solution=best_solution  # Must be ok, passed the test
+        refine
+        best_solution=get_best_solution(matching_examples)
+        break if best_solution.nil?
+      end
+      return previous_solution
     end
 
     # A given rule is perfect if it successfully matches the label on at least
@@ -147,8 +164,8 @@ module Ariel
     # * fewer wildcards
     # * longer end landmarks
     # * shorter unconsumed prefixes
-    def get_best_solution
-      r = CandidateRefiner.new(@candidates, @examples)
+    def get_best_solution(examples=@examples)
+      r = CandidateRefiner.new(@candidates, examples)
       r.refine_by_match_type :perfect
       r.refine_by_match_type :fail
       r.refine_by_fewer_wildcards
@@ -166,7 +183,6 @@ module Ariel
     # arguments. 
     def refine
       @candidates=[]
-      p current_rule.inspect
       current_rule.landmarks.each_with_index do |landmark, index|
         add_new_landmarks(landmark, index) #Topology refinements
         lengthen_landmark(landmark, index) #Landmark refinements
@@ -229,6 +245,7 @@ module Ariel
       topology_refs=[]
       start_pos = current_rule.partial(0..index).closest_match(current_seed, :early)
       end_pos = current_seed.label_index #No point adding tokens that occur after the label_index
+      assert { not (start_pos.nil? or end_pos.nil?) }
       current_seed.tokens[start_pos...end_pos].each do |token|
         r=current_rule.deep_clone
         r.landmarks.insert(index+1, [token.text])
