@@ -44,6 +44,9 @@ module Ariel
       Marshal::load(Marshal.dump(self))
     end
 
+    # Takes an index for the landmark to be generalised and an index for the 
+    # feature of that landmark. Returns an array of rules that replace that 
+    # feature with a matching wildcard.
     def generalise_feature(landmark_index, feature_index=0)
       feature=self.landmarks[landmark_index][feature_index]
       alternates=[]
@@ -73,17 +76,16 @@ module Ariel
     # reversed state or not.
     def apply_to(tokenstream) 
       target=self.class.prepare_tokenstream(tokenstream, @direction)
-      cache_check=@@cache[[tokenstream.cache_hash, self.hash]]
+      cache_check=@@cache[[tokenstream, [@landmarks, @direction, @exhaustive]]]
       if cache_check
         token_locs=cache_check
       else
         token_locs=[]
         while result=seek_landmarks(target)
           token_locs << correct_match_location(tokenstream, result)
-#          assert {token_locs.last != 0}
           break unless exhaustive?
         end
-        @@cache[[tokenstream.cache_hash, self.hash]]=token_locs
+        @@cache[[tokenstream, [@landmarks, @direction, @exhaustive]]]=token_locs
       end
       if block_given?
         generate_match_data(target, token_locs).each {|md| yield md}
@@ -140,7 +142,7 @@ module Ariel
     # corrected by correct_match_location
     def seek_landmarks(tokenstream)
       @landmarks.each do |landmark|
-        unless tokenstream.kmp(*landmark)
+        unless tokenstream.skip_to(*landmark)
           return nil
         end
       end
@@ -183,7 +185,7 @@ module Ariel
       if preference==:early
         token_locs = token_locs.reject {|token_loc| token_loc > label_index}
       elsif preference==:late
-        token_locs = token_locs.reject {|token_loc| token_loc | label_index}
+        token_locs = token_locs.reject {|token_loc| token_loc < label_index}
       end
       token_locs.sort_by {|token_loc| (label_index-token_loc).abs}.first
     end

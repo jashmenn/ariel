@@ -1,5 +1,7 @@
 module Ariel::Tokenizer
 
+  require 'enumerator'
+
   class Custom
     attr_accessor :re_labels, :re_wanted, :re_unwanted
 

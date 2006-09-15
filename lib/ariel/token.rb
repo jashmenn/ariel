@@ -42,22 +42,14 @@ module Ariel
     # to Token#text, and false if the match fails. Raises an
     # error if the passed symbol is not a member of Wildcards#list.
     def matches?(landmark)
-      if landmark.kind_of? Symbol or landmark.kind_of? Regexp
-        if landmark.kind_of? Symbol
-          raise ArgumentError, "#{landmark} is not a valid wildcard." unless Wildcards.list.has_key? landmark
-          regex = Wildcards.list[landmark]
-        else
-          regex = landmark
-        end
-        if self.text[regex] == self.text
-          return true
-        else
-          return false
-        end
-      else
-        return true if landmark==self.text
+      if landmark.kind_of? Symbol
+        landmark = Wildcards.list.fetch(landmark)
       end
-      return false
+      if self.text[landmark] == self.text
+        return true
+      else
+        return false
+      end
     end
 
     # Returns an array of symbols corresponding to the Wildcards that match the

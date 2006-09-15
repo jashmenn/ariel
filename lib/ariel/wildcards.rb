@@ -1,7 +1,6 @@
 module Ariel  
   # Contains all wildcards to be used in rule generation.
   class Wildcards
-
     @list = {
         :anything=>/.+/,
         :numeric=>/\d+/,
@@ -24,7 +23,7 @@ module Ariel
       # match it.
       def matching(string)
         matches=[]
-        @list.each do |name, regex|
+        list.each do |name, regex|
           if string[regex]==string
             yield name if block_given?
             matches << name

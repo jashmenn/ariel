@@ -1,9 +1,8 @@
 module Ariel
 
-  require 'enumerator'
-  
-  # A TokenStream instance stores a stream of Tokens once it has used its tokenization 
-  # rules to extract them from a string. A TokenStream knows its current
+  # A TokenStream instance stores a stream of Tokens once it has used its 
+  # tokenization rules to extract them from a string. A TokenStream knows its 
+  # current
   # position (TokenStream#cur_pos), which is incremented when any of the
   # Enumerable methods are used (due to the redefinition of TokenStream#each).
   # As you advance through the stream, the current token is always returned and
@@ -14,10 +13,8 @@ module Ariel
   # state so that when rules are applied, they are always applied from the front
   # or end of the stream as required, whether it is reversed or not.
   class TokenStream
-    include Enumerable
     include Comparable
     attr_accessor :tokens, :cur_pos, :label_index, :original_text
-
    
     def initialize()
       @tokens=[]
@@ -27,6 +24,10 @@ module Ariel
       @contains_label_tags=false
     end
 
+    # By default uses the default tokenizer. Takes a string to be tokenized, a 
+    # boolean that indicates whether the string contains labels that should be 
+    # stripped, and finally a tokenizer. The passed tokenizer must respond to 
+    # #tokenize, and returns an array of Tokens in the correct order.
     def tokenize(input, contains_label_tags=false, tokenizer=Tokenizer::Default)
       @original_text=input
       @contains_label_tags=contains_label_tags
@@ -34,18 +35,13 @@ module Ariel
       @tokens.size
     end
 
-    # Note, token.cache_hash!=token.reverse.reverse.cache_hash. 
-    def cache_hash
-      [@tokens, @reversed].hash
-    end
-
     def contains_label_tags?
       @contains_label_tags
     end
 
-    # Goes through all stored Token instances, removing them if
-    # Token#is_label_tag? Called after a labeled document has been extracted to
-    # a tree ready for the rule learning process.
+    # Goes through all stored Token instances, removing them if 
+    # Token#is_label_tag? Called after a labeled document has been extracted 
+    #toa tree ready for the rule learning process.
     def remove_label_tags
       @tokens.delete_if {|token| token.is_label_tag?}
     end
@@ -180,49 +176,26 @@ module Ariel
     # TokenStream's current position is returned on success. On failure, the
     # TokenStream is returned to its original state and returns nil.
     def skip_to(*features)
-      original_pos=@cur_pos
-      self.each_cons(features.size) do |tokens|
-        i=0
-        return @cur_pos if tokens.all? {|token| i+=1; token.matches?(features[i-1])}
+      features=features.collect do |f|
+        f=Wildcards.list.fetch(f) if f.kind_of? Symbol
+        f
       end
-      @cur_pos=original_pos #No match, return TokenStream to original state
-      return nil 
-    end
-   
-    def kmp(*features)
-      n=tokens.size
-      m=features.size
-      pi=compute_table(features)
-      q=0
-      orig_pos=cur_pos
-      tokens[cur_pos..-1].each_with_index do |token, i|
-        while q > 0 && (token.matches? features[q] == false)
-          q = pi[q-1]
+      match_length=0
+      shifts=compute_table(features)
+      orig_pos=@cur_pos
+      for token in @tokens[@cur_pos..-1]
+        while (match_length >=0) and !(features[match_length]===token.text)
+          @cur_pos+=shifts[match_length]
+          match_length-=shifts[match_length]
         end
-        if token.matches? features[q]
-          q+=1
-        end
-        if q == m
-          self.cur_pos=orig_pos + i+1
-          return self.cur_pos
+        match_length+=1
+        if match_length == features.length
+          @cur_pos+=match_length # Consume matched tokens
+          return @cur_pos
         end
       end
+      @cur_pos = orig_pos
       return nil
-    end
-
-    def compute_table(p)
-      m=p.size
-      pi = [0] * m
-      k=0
-      p.each_with_index do |feature, q|
-        while k > 0 && (p[k] != p[q])
-          k = pi[k - 1]
-        end
-        if p[k] == p[q]
-          k+=1
-        end
-        pi[q]=k
-      end
     end
 
     # Iterates over and consumes every Token from the cur_pos.
@@ -239,6 +212,33 @@ module Ariel
 
     def <=>(stream)
       self.tokens.first.start_loc <=> stream.tokens.first.start_loc
+    end
+
+
+    private
+    def could_match(a, b)
+      if a==b
+        return true
+      elsif a===b
+        return true
+      elsif b===a
+        return true
+      end
+      return false
+    end
+
+    def compute_table(pattern) 
+      shifts=Array.new(pattern.size)
+      shift = 1
+      0.upto pattern.size do |i|
+        a=pattern[i-1]
+        b=pattern[i-shift-1]
+        while (shift < i) and !could_match(pattern[i-1], pattern[i-shift-1])
+          shift += shifts[i-shift-1]
+        end
+        shifts[i]=shift
+      end
+      return shifts
     end
   end
 end
