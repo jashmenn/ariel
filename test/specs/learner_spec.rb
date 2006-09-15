@@ -1,22 +1,19 @@
 require 'ariel'
 require 'fixtures'
 include Fixtures
-
+Ariel::Log.set_level :debug
 context "A non-exhaustive forward rule learner" do
   setup do
     @learner=Ariel::Learner.new(*@@labeled_addresses)
   end
 
   specify "set_seed should choose the example with the smallest number of tokens before the label" do
-    @learner.set_seed.should_equal @@labeled_addresses[1]
-  end
-
-  specify "A seed should be set when a Learner instance is initialized and made accessible through #current_seed" do
-    @learner.current_seed.should_equal @@labeled_addresses[1]
+    @learner.send(:set_seed).should_equal @@labeled_addresses[1]
   end
 
   specify "generate_initial_candidates should generate rule candidates based on the token before the label in the current_seed" do
     @learner.direction=:forward
+    @learner.send(:set_seed)
     c=@learner.generate_initial_rules
     c.should_include Ariel::Rule.new([["("]], :forward)
     c.should_include Ariel::Rule.new([[:anything]], :forward)

@@ -23,7 +23,7 @@ context "An average token" do
   end
 
   specify "Should raise an error if an invalid wildcard is given" do
-    lambda {@token.matches? :not_a_wildcard}.should_raise ArgumentError
+    lambda {@token.matches? :not_a_wildcard}.should_raise
   end
 
   specify "Should be able to list all wildcard symbols that match its text" do
