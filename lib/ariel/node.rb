@@ -4,8 +4,8 @@ module Ariel
   # children are stored in a hash. #id and #type are undefined so they can be
   # used freely as part of a Node::Structure
   class Node
-    removed_methods=[:id, :type]
-    removed_methods.each {|meth| undef_method meth}
+    # removed_methods=[:id, :type]
+    # removed_methods.each {|meth| undef_method meth}
     attr_accessor :parent, :children, :node_name
 
     # If the name is a string, it's converted to a symbol. If not it's just

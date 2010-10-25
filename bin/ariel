@@ -2,6 +2,8 @@
 
 require 'optparse'
 require 'yaml'
+require 'pp'
+$:.unshift(File.dirname(__FILE__) + "/../lib")
 
 options = {}
 
@@ -36,6 +38,7 @@ require 'ariel' #After option parsing so debug setting can take effect
 
 files=Dir["#{options[:dir]}/*"].select {|file_name| File.file? file_name}
 structure=YAML.load_file options[:structure]
+pp structure
 
 case options[:mode]
 when "learn"

@@ -249,8 +249,8 @@ module Ariel
       topology_refs=[]
       start_pos = rule.partial(0..index).closest_match(current_seed, :early)
       end_pos = current_seed.label_index #No point adding tokens that occur after the label_index
-      assert { not start_pos.nil?}
-      assert {not end_pos.nil?}
+      #assert { not start_pos.nil?}
+      #assert {not end_pos.nil?}
       current_seed.tokens[start_pos...end_pos].each do |token|
         r=rule.deep_clone
         r.landmarks.insert(index+1, [token.text])
